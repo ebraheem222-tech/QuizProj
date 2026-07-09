@@ -5,19 +5,22 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientDir = path.join(__dirname, "client");
+const clientStaticDir = path.resolve(__dirname, "client");
 const port = Number(process.env.PORT || 3000);
 
-const cleanRoutes = new Map([
+// Route table: clean browser paths point to static HTML files inside client/.
+const pageRoutes = new Map([
   ["/", "index.html"],
+  ["/index.html", "index.html"],
   ["/login", "pages/login.html"],
+  ["/login.html", "pages/login.html"],
   ["/register", "pages/register.html"],
   ["/teacher", "pages/teacher.html"],
   ["/student", "pages/student.html"],
   ["/search", "pages/search.html"]
 ]);
 
-const dynamicRoutes = [
+const dynamicPageRoutes = [
   { pattern: /^\/exam\/[a-zA-Z0-9-]+$/, file: "pages/exam-details.html" },
   { pattern: /^\/take\/[a-zA-Z0-9-]+$/, file: "pages/take-exam.html" }
 ];
@@ -34,25 +37,41 @@ const mimeTypes = {
   ".ico": "image/x-icon"
 };
 
-function getRouteFile(pathname) {
-  if (cleanRoutes.has(pathname)) {
-    return cleanRoutes.get(pathname);
+function normalizePathname(pathname) {
+  const safePathname = decodeURIComponent(pathname).replaceAll("\\", "/");
+
+  // Allows http://localhost:3000/client/index.html as well as http://localhost:3000/
+  if (safePathname === "/client") {
+    return "/";
   }
 
-  const dynamicRoute = dynamicRoutes.find(route => route.pattern.test(pathname));
+  if (safePathname.startsWith("/client/")) {
+    return safePathname.slice("/client".length);
+  }
+
+  return safePathname;
+}
+
+function getClientRelativePath(pathname) {
+  const normalizedPathname = normalizePathname(pathname);
+
+  if (pageRoutes.has(normalizedPathname)) {
+    return pageRoutes.get(normalizedPathname);
+  }
+
+  const dynamicRoute = dynamicPageRoutes.find(route => route.pattern.test(normalizedPathname));
 
   if (dynamicRoute) {
     return dynamicRoute.file;
   }
 
-  return pathname.replace(/^\/+/, "");
+  return normalizedPathname.replace(/^\/+/, "") || "index.html";
 }
 
-function resolveClientFile(pathname) {
-  const safePathname = decodeURIComponent(pathname).replaceAll("\\", "/");
-  const routeFile = getRouteFile(safePathname);
-  const filePath = path.resolve(clientDir, routeFile || "index.html");
-  const relativePath = path.relative(clientDir, filePath);
+function resolveStaticFile(pathname) {
+  const clientRelativePath = getClientRelativePath(pathname);
+  const filePath = path.resolve(clientStaticDir, clientRelativePath);
+  const relativePath = path.relative(clientStaticDir, filePath);
 
   // Keep every request inside the client folder, even when the URL contains ../
   if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
@@ -78,7 +97,7 @@ async function sendFile(response, filePath) {
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
-  const filePath = resolveClientFile(url.pathname);
+  const filePath = resolveStaticFile(url.pathname);
 
   if (!filePath) {
     response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
