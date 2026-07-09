@@ -52,9 +52,10 @@ function resolveClientFile(pathname) {
   const safePathname = decodeURIComponent(pathname).replaceAll("\\", "/");
   const routeFile = getRouteFile(safePathname);
   const filePath = path.resolve(clientDir, routeFile || "index.html");
+  const relativePath = path.relative(clientDir, filePath);
 
   // Keep every request inside the client folder, even when the URL contains ../
-  if (!filePath.startsWith(clientDir)) {
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
     return null;
   }
 
