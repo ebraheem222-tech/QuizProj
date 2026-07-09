@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizProj | הרשמה</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <header id="appHeader"></header>
+  <main class="page-shell">
+    <section class="panel auth-panel">
+      <h1>הרשמה</h1>
+      <div id="registerMessage"></div>
+      <form id="registerForm" class="form-grid">
+        <label class="form-field">
+          שם מלא
+          <input class="form-control" name="fullName" autocomplete="name" required>
+        </label>
+        <label class="form-field">
+          תעודת זהות
+          <input class="form-control" name="nationalId" inputmode="numeric" required>
+        </label>
+        <label class="form-field">
+          אימייל
+          <input class="form-control" name="email" type="email" autocomplete="email" required>
+        </label>
+        <label class="form-field">
+          סיסמה
+          <input class="form-control" name="password" type="password" autocomplete="new-password" minlength="4" required>
+        </label>
+        <label class="form-field">
+          סוג משתמש
+          <select class="form-select" name="role" required>
+            <option value="teacher">מורה</option>
+            <option value="student">סטודנט</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" type="submit">יצירת חשבון</button>
+      </form>
+    </section>
+  </main>
+  <script type="module" src="../assets/js/pages/register.js"></script>
+</body>
+</html>

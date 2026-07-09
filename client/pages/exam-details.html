@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizProj | פרטי מבחן</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+</head>
+<body>
+  <header id="appHeader"></header>
+  <main class="page-shell">
+    <section class="page-heading">
+      <div>
+        <p class="section-kicker">ניהול מבחן</p>
+        <h1 id="examDetailsTitle">פרטי מבחן</h1>
+      </div>
+      <a class="btn btn-outline-primary" data-nav="teacher" href="/teacher">חזרה למורה</a>
+    </section>
+
+    <div id="examDetailsMessage"></div>
+    <section class="content-grid details-layout">
+      <article class="panel">
+        <h2>מידע כללי</h2>
+        <form id="examDetailsForm" class="form-grid"></form>
+      </article>
+      <article class="panel">
+        <h2>שאלות</h2>
+        <form id="questionForm" class="form-grid question-form"></form>
+        <div id="questionsList" class="stack-list"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>תוצאות סטודנטים</h2>
+      <div id="examResultsTable" class="table-wrap"></div>
+    </section>
+  </main>
+  <script type="module" src="../assets/js/pages/exam-details.js"></script>
+</body>
+</html>

@@ -1,1 +1,1 @@
-alert("Login successfull");
+window.location.href = "client/pages/login.html";
