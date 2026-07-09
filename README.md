@@ -15,6 +15,14 @@
 npm start
 ```
 
+אחרי ההרצה פותחים בדפדפן:
+
+```text
+http://localhost:3000
+```
+
+אין לפתוח את האתר ישירות כקובץ `file://`, כי ES Modules ו-routes כמו `/register` צריכים שרת סטטי.
+
 השרת מוגדר ב-`server.js` ומגיש את `client/` כ-static files.  
 Routes נתמכים:
 

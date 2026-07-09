@@ -8,8 +8,10 @@ const routes = {
 };
 
 function usesNodeRoutes() {
-  const host = window.location.hostname;
-  return window.location.protocol !== "file:" && (host === "localhost" || host === "127.0.0.1");
+  const pathname = window.location.pathname.replaceAll("\\", "/");
+  const isStaticClientPath = pathname.includes("/client/") || pathname.endsWith(".html");
+
+  return window.location.protocol !== "file:" && !isStaticClientPath;
 }
 
 function getClientBasePath() {
