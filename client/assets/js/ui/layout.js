@@ -31,7 +31,7 @@ function getRoleLinks(user) {
 
   return `
     <a class="btn btn-outline-primary btn-sm" data-nav="${dashboardRoute}" href="${pathFor(dashboardRoute)}">${dashboardLabel}</a>
-    <a class="btn btn-outline-primary btn-sm" data-nav="search" href="${pathFor("search")}">חיפוש מבחן</a>
+    ${user.isStudent() ? `<a class="btn btn-outline-primary btn-sm" data-nav="search" href="${pathFor("search")}">חיפוש מבחן</a>` : ""}
     <button class="btn btn-outline-danger btn-sm" id="logoutButton" type="button">התנתקות</button>
   `;
 }

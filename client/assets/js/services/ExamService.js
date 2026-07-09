@@ -20,7 +20,7 @@ export class ExamService {
   }
 
   getExamByCode(code) {
-    return this.getAllExams().find(exam => exam.code.toLowerCase() === code.trim().toLowerCase()) || null;
+    return this.getAllExams().find(exam => exam.code?.toLowerCase() === code.trim().toLowerCase()) || null;
   }
 
   getExamsByTeacher(teacherId) {
@@ -35,9 +35,15 @@ export class ExamService {
   }
 
   createExam(examData) {
+    const code = examData.code?.trim() || this.generateCode(examData.title);
+
+    if (!this.isCodeAvailable(code)) {
+      throw new Error("קוד המבחן כבר קיים. בחר קוד אחר.");
+    }
+
     const exam = new Exam({
       ...examData,
-      code: examData.code?.trim() || this.generateCode(examData.title)
+      code
     });
 
     this.saveAllExams([...this.getAllExams(), exam]);
@@ -45,6 +51,10 @@ export class ExamService {
   }
 
   updateExam(examId, updates) {
+    if (updates.code && !this.isCodeAvailable(updates.code, examId)) {
+      throw new Error("קוד המבחן כבר קיים. בחר קוד אחר.");
+    }
+
     let updatedExam = null;
     const exams = this.getAllExams().map(exam => {
       if (exam.id !== examId) {
@@ -84,6 +94,15 @@ export class ExamService {
 
   getCategories() {
     return [...new Set(this.getAllExams().map(exam => exam.category).filter(Boolean))].sort();
+  }
+
+  isCodeAvailable(code, exceptExamId = null) {
+    const normalizedCode = code.trim().toLowerCase();
+
+    return !this.getAllExams().some(exam => (
+      exam.id !== exceptExamId &&
+      exam.code?.trim().toLowerCase() === normalizedCode
+    ));
   }
 
   generateCode(title = "EXAM") {
