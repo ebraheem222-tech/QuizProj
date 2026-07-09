@@ -1,118 +1,58 @@
-import http from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const clientStaticDir = path.resolve(__dirname, "client");
+const app = express();
 const port = Number(process.env.PORT || 3000);
+const clientDir = path.join(__dirname, "client");
 
-// Route table: clean browser paths point to static HTML files inside client/.
-const pageRoutes = new Map([
-  ["/", "index.html"],
-  ["/index.html", "index.html"],
-  ["/login", "pages/login.html"],
-  ["/login.html", "pages/login.html"],
-  ["/register", "pages/register.html"],
-  ["/teacher", "pages/teacher.html"],
-  ["/student", "pages/student.html"],
-  ["/search", "pages/search.html"]
-]);
-
-const dynamicPageRoutes = [
-  { pattern: /^\/exam\/[a-zA-Z0-9-]+$/, file: "pages/exam-details.html" },
-  { pattern: /^\/take\/[a-zA-Z0-9-]+$/, file: "pages/take-exam.html" }
-];
-
-const mimeTypes = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".ico": "image/x-icon"
-};
-
-function normalizePathname(pathname) {
-  const safePathname = decodeURIComponent(pathname).replaceAll("\\", "/");
-
-  // Allows http://localhost:3000/client/index.html as well as http://localhost:3000/
-  if (safePathname === "/client") {
-    return "/";
-  }
-
-  if (safePathname.startsWith("/client/")) {
-    return safePathname.slice("/client".length);
-  }
-
-  return safePathname;
+function sendClientPage(response, pagePath) {
+  response.sendFile(path.join(clientDir, pagePath));
 }
 
-function getClientRelativePath(pathname) {
-  const normalizedPathname = normalizePathname(pathname);
+// Static client files: CSS, JS modules, images, and direct HTML access.
+app.use(express.static(clientDir));
+app.use("/client", express.static(clientDir));
 
-  if (pageRoutes.has(normalizedPathname)) {
-    return pageRoutes.get(normalizedPathname);
-  }
-
-  const dynamicRoute = dynamicPageRoutes.find(route => route.pattern.test(normalizedPathname));
-
-  if (dynamicRoute) {
-    return dynamicRoute.file;
-  }
-
-  return normalizedPathname.replace(/^\/+/, "") || "index.html";
-}
-
-function resolveStaticFile(pathname) {
-  const clientRelativePath = getClientRelativePath(pathname);
-  const filePath = path.resolve(clientStaticDir, clientRelativePath);
-  const relativePath = path.relative(clientStaticDir, filePath);
-
-  // Keep every request inside the client folder, even when the URL contains ../
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    return null;
-  }
-
-  return filePath;
-}
-
-async function sendFile(response, filePath) {
-  const fileStats = await stat(filePath);
-  const resolvedPath = fileStats.isDirectory()
-    ? path.join(filePath, "index.html")
-    : filePath;
-  const ext = path.extname(resolvedPath);
-  const content = await readFile(resolvedPath);
-
-  response.writeHead(200, {
-    "Content-Type": mimeTypes[ext] || "application/octet-stream"
-  });
-  response.end(content);
-}
-
-const server = http.createServer(async (request, response) => {
-  const url = new URL(request.url, `http://${request.headers.host}`);
-  const filePath = resolveStaticFile(url.pathname);
-
-  if (!filePath) {
-    response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Forbidden");
-    return;
-  }
-
-  try {
-    await sendFile(response, filePath);
-  } catch {
-    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    response.end("Not found");
-  }
+// Clean page routes with Express path routing.
+app.get(["/", "/index.html", "/client"], (request, response) => {
+  sendClientPage(response, "index.html");
 });
 
-server.listen(port, () => {
-  console.log(`QuizProj is running at http://localhost:${port}`);
+app.get(["/login", "/login.html"], (request, response) => {
+  sendClientPage(response, "pages/login.html");
+});
+
+app.get("/register", (request, response) => {
+  sendClientPage(response, "pages/register.html");
+});
+
+app.get("/teacher", (request, response) => {
+  sendClientPage(response, "pages/teacher.html");
+});
+
+app.get("/student", (request, response) => {
+  sendClientPage(response, "pages/student.html");
+});
+
+app.get("/search", (request, response) => {
+  sendClientPage(response, "pages/search.html");
+});
+
+app.get("/exam/:id", (request, response) => {
+  sendClientPage(response, "pages/exam-details.html");
+});
+
+app.get("/take/:id", (request, response) => {
+  sendClientPage(response, "pages/take-exam.html");
+});
+
+app.use((request, response) => {
+  response.status(404).send("Not found");
+});
+
+app.listen(port, () => {
+  console.log(`QuizProj Express server is running at http://localhost:${port}`);
 });

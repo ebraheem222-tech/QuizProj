@@ -1,7 +1,7 @@
 {
   "name": "quizproj-client-system",
   "version": "1.0.0",
-  "description": "Client-side quiz system served by a small Node.js static router.",
+  "description": "Client-side quiz system served by an Express static router.",
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -14,5 +14,8 @@
     "oop"
   ],
   "author": "Ebraheem Miari",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }

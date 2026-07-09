@@ -1,7 +1,7 @@
 # QuizProj - מערכת מבחנים צד לקוח
 
 מערכת מבחנים מלאה שפועלת בדפדפן בלבד ושומרת נתונים ב-`localStorage` בפורמט JSON.  
-הפרויקט משתמש ב-ES Modules, מחלקות OOP, שירותים מופרדים, ושרת Node.js קטן שמגיש את תיקיית `client` כאתר סטטי עם routes נקיים.
+הפרויקט משתמש ב-ES Modules, מחלקות OOP, שירותים מופרדים, ושרת Node.js Express שמגיש את תיקיית `client` כאתר סטטי עם routes נקיים.
 
 ## קישורים
 
@@ -12,6 +12,7 @@
 ## הרצה
 
 ```bash
+npm install
 npm start
 ```
 
@@ -23,7 +24,12 @@ http://localhost:3000
 
 אין לפתוח את האתר ישירות כקובץ `file://`, כי ES Modules ו-routes כמו `/register` צריכים שרת סטטי.
 
-השרת מוגדר ב-`server.js` ומגיש את `client/` כ-static files.  
+השרת מוגדר ב-`server.js` עם Express:
+
+- `app.use(express.static(clientDir))` להגשת תיקיית `client/`.
+- `app.use("/client", express.static(clientDir))` לתמיכה בנתיבי `/client/...`.
+- `app.get(...)` עבור routes נקיים לדפי האתר.
+
 Routes נתמכים:
 
 - `/`
