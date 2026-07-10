@@ -3,6 +3,8 @@
 מערכת מבחנים מלאה שפועלת בדפדפן בלבד ושומרת נתונים ב-`localStorage` בפורמט JSON.  
 הפרויקט משתמש ב-ES Modules, מחלקות OOP, שירותים מופרדים, ושרת Node.js Express שמגיש את תיקיית `client` כאתר סטטי עם routes נקיים.
 
+המסמך המלא להגשה, כולל ניווט, JSON, UML ותזרימי מערכת: [TECHNICAL_DOCUMENT.md](TECHNICAL_DOCUMENT.md)
+
 ## קישורים
 
 - GitHub: https://github.com/ebraheem222-tech/QuizProj
