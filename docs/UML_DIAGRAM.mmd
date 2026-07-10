@@ -1,0 +1,95 @@
+classDiagram
+  direction LR
+
+  class User {
+    +String id
+    +String fullName
+    +String nationalId
+    +String email
+    +String password
+    +String role
+    +isTeacher() Boolean
+    +isStudent() Boolean
+    +getDashboardRoute() String
+  }
+
+  class Exam {
+    +String id
+    +String teacherId
+    +String title
+    +String category
+    +String code
+    +Number durationMinutes
+    +Boolean shuffleQuestions
+    +Question[] questions
+    +addQuestion(data)
+    +updateQuestion(id, data)
+    +removeQuestion(id)
+    +hasSearchMatch(query) Boolean
+  }
+
+  class Question {
+    +String id
+    +String text
+    +String[] answers
+    +Number correctAnswerIndex
+    +String difficulty
+    +isCorrect(answerIndex) Boolean
+  }
+
+  class Result {
+    +String id
+    +String examId
+    +String studentId
+    +Object[] answers
+    +Number score
+    +Number percent
+    +String submittedAt
+  }
+
+  class StorageService {
+    +String prefix
+    +get(name, fallback) Any
+    +set(name, value)
+    +remove(name)
+  }
+
+  class AuthService {
+    -StorageService storage
+    +getCurrentUser() User
+    +register(userData) User
+    +login(identifier, password) User
+    +logout()
+  }
+
+  class ExamService {
+    -StorageService storage
+    +getAllExams() Exam[]
+    +getExamById(id) Exam
+    +searchExams(query, category) Exam[]
+    +createExam(data) Exam
+    +updateExam(id, updates) Exam
+    +deleteExam(id)
+    +exportExam(id) String
+    +importExam(json, teacherId) Exam
+  }
+
+  class ResultService {
+    -StorageService storage
+    +getResultsByStudent(id) Result[]
+    +getResultsByExam(id) Result[]
+    +calculateResult(data) Result
+    +saveResult(result) Result
+    +getStudentAverage(id) Number
+  }
+
+  Exam "1" *-- "0..*" Question : contains
+  User "1" --> "0..*" Exam : teacher creates
+  User "1" --> "0..*" Result : student receives
+  Exam "1" --> "0..*" Result : has
+  AuthService --> StorageService : users
+  ExamService --> StorageService : exams
+  ResultService --> StorageService : results
+  AuthService ..> User : creates
+  ExamService ..> Exam : creates
+  ResultService ..> Result : creates

@@ -5,6 +5,18 @@
 
 המסמך המלא להגשה, כולל ניווט, JSON, UML ותזרימי מערכת: [TECHNICAL_DOCUMENT.md](TECHNICAL_DOCUMENT.md)
 
+קובצי הגשה מוכנים:
+
+- [מסמך טכני PDF](docs/TECHNICAL_DOCUMENT.pdf)
+- [תרשים UML כ-SVG](docs/UML_DIAGRAM.svg)
+- [תרשים UML כ-PNG](docs/UML_DIAGRAM.png)
+
+ליצירה מחדש של קובצי ההגשה לאחר שינוי המסמך:
+
+```bash
+npm run docs
+```
+
 ## קישורים
 
 - GitHub: https://github.com/ebraheem222-tech/QuizProj
