@@ -1,6 +1,10 @@
 import { User } from "../models/User.js";
 import { StorageService } from "./StorageService.js";
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 export class AuthService {
   constructor(storage = new StorageService()) {
     this.storage = storage;
@@ -27,26 +31,32 @@ export class AuthService {
 
   register(userData) {
     const users = this.getUsers();
-    const normalizedEmail = userData.email.trim().toLowerCase();
-    const nationalId = userData.nationalId.trim();
+    const fullName = String(userData.fullName || "").trim();
+    const normalizedEmail = normalizeEmail(userData.email);
+    const nationalId = String(userData.nationalId || "").trim();
+    const password = String(userData.password || "");
 
     if (!["teacher", "student"].includes(userData.role)) {
       throw new Error("יש לבחור מורה או סטודנט.");
     }
 
-    if (users.some(user => user.email.toLowerCase() === normalizedEmail)) {
+    if (!fullName || !normalizedEmail || !nationalId || !password) {
+      throw new Error("יש למלא את כל פרטי ההרשמה.");
+    }
+
+    if (users.some(user => normalizeEmail(user.email) === normalizedEmail)) {
       throw new Error("האימייל כבר קיים במערכת.");
     }
 
-    if (users.some(user => user.nationalId === nationalId)) {
+    if (users.some(user => String(user.nationalId || "").trim() === nationalId)) {
       throw new Error("תעודת הזהות כבר קיימת במערכת.");
     }
 
     const user = new User({
-      fullName: userData.fullName.trim(),
+      fullName,
       nationalId,
       email: normalizedEmail,
-      password: userData.password,
+      password,
       role: userData.role
     });
 
@@ -56,10 +66,10 @@ export class AuthService {
   }
 
   login(identifier, password) {
-    const normalizedIdentifier = identifier.trim().toLowerCase();
+    const normalizedIdentifier = normalizeEmail(identifier);
     const user = this.getUsers().find(existingUser => (
-      existingUser.email.toLowerCase() === normalizedIdentifier ||
-      existingUser.nationalId === identifier.trim()
+      normalizeEmail(existingUser.email) === normalizedIdentifier ||
+      String(existingUser.nationalId || "").trim() === String(identifier || "").trim()
     ));
 
     if (!user || user.password !== password) {

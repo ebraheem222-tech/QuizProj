@@ -13,6 +13,7 @@ if (!currentUser) {
 
     try {
       const user = authService.register(getFormValues(form));
+      form.querySelector('button[type="submit"]').disabled = true;
       showMessage(message, "החשבון נוצר בהצלחה. מעבירים לדף המתאים.", "success");
       setTimeout(() => goTo(user.getDashboardRoute()), 600);
     } catch (error) {
