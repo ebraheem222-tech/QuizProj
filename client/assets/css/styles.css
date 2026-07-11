@@ -201,6 +201,36 @@ a {
   margin: 0 auto;
 }
 
+.exam-runner-shell {
+  width: min(900px, calc(100% - 32px));
+}
+
+.exam-runner-shell .page-heading h1 {
+  unicode-bidi: plaintext;
+}
+
+.exam-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.exam-description {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.exam-meta {
+  display: flex;
+  gap: 10px 24px;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+
+.exam-meta strong {
+  color: var(--text);
+}
+
 .form-field {
   display: grid;
   gap: 6px;
@@ -270,12 +300,37 @@ a {
   min-width: 680px;
 }
 
-.question-box legend {
-  float: none;
-  width: auto;
-  margin-bottom: 14px;
-  font-size: 1.1rem;
+.exam-form .question-box {
+  padding: 0;
+  overflow: hidden;
+}
+
+.question-header {
+  padding: 18px 20px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--border);
+}
+
+.question-number {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 0.82rem;
   font-weight: 700;
+}
+
+.question-title {
+  margin: 0;
+  font-size: 1.18rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+.answer-list {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px 20px;
 }
 
 .timer-box {
@@ -292,12 +347,42 @@ a {
 .answer-option {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
-  padding: 10px 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.answer-option:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+}
+
+.answer-option:has(input:checked) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+.answer-option input {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.answer-option span {
+  flex: 1;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+.exam-submit-button {
+  min-height: 50px;
+  font-weight: 700;
 }
 
 .answer-option.correct {
@@ -336,5 +421,16 @@ a {
 
   .compact-input {
     max-width: none;
+  }
+
+  .exam-summary,
+  .question-header,
+  .answer-list {
+    padding: 16px;
+  }
+
+  .exam-meta {
+    display: grid;
+    gap: 6px;
   }
 }

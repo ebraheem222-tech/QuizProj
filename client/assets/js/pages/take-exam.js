@@ -49,18 +49,26 @@ function shuffle(items) {
 
 function renderExamForm() {
   form.innerHTML = `
-    <section class="panel">
-      <h2>${escapeHtml(exam.title)}</h2>
-      <p class="meta-line">
-        קטגוריה: ${escapeHtml(exam.category)} | קוד: ${escapeHtml(exam.code)} |
-        זמן: ${exam.durationMinutes} דקות
-      </p>
-      <p>${escapeHtml(exam.description || "")}</p>
+    <section class="panel exam-summary">
+      <p class="exam-description">${escapeHtml(exam.description || "אין תיאור למבחן.")}</p>
+      <div class="exam-meta">
+        <span><strong>קטגוריה:</strong> ${escapeHtml(exam.category)}</span>
+        <span><strong>קוד:</strong> ${escapeHtml(exam.code)}</span>
+        <span><strong>זמן:</strong> ${exam.durationMinutes ? `${exam.durationMinutes} דקות` : "ללא הגבלה"}</span>
+      </div>
     </section>
     ${displayQuestions.map((question, index) => `
-      <fieldset class="question-box" data-question-id="${question.id}">
-        <legend>${index + 1}. ${escapeHtml(question.text)}</legend>
-        <div class="link-list">
+      <section
+        class="question-box"
+        data-question-id="${question.id}"
+        role="group"
+        aria-labelledby="question-title-${index}"
+      >
+        <header class="question-header">
+          <span class="question-number">שאלה ${index + 1}</span>
+          <h2 class="question-title" id="question-title-${index}">${escapeHtml(question.text)}</h2>
+        </header>
+        <div class="answer-list">
           ${question.answers.map((answer, answerIndex) => `
             <label class="answer-option" data-question-id="${question.id}" data-answer-index="${answerIndex}">
               <input type="radio" name="${question.id}" value="${answerIndex}">
@@ -68,9 +76,9 @@ function renderExamForm() {
             </label>
           `).join("")}
         </div>
-      </fieldset>
+      </section>
     `).join("")}
-    <button class="btn btn-primary" id="submitExamButton" type="submit">סיום ושליחת מבחן</button>
+    <button class="btn btn-primary exam-submit-button" id="submitExamButton" type="submit">סיום ושליחת מבחן</button>
   `;
 }
 
