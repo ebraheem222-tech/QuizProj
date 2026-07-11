@@ -1,0 +1,95 @@
+digraph QuizProjUML {
+  graph [
+    rankdir=TB,
+    bgcolor="white",
+    pad="0.25",
+    nodesep="0.55",
+    ranksep="0.75",
+    splines=polyline,
+    fontname="Arial"
+  ];
+  node [shape=plain, fontname="Arial"];
+  edge [color="#334155", fontname="Arial", fontsize=10, arrowsize=0.75, penwidth=1.25];
+
+  User [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
+      <TR><TD BGCOLOR="#2563EB"><FONT COLOR="white"><B>User</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#EFF6FF">+ id: String<BR ALIGN="LEFT"/>+ role: String</TD></TR>
+      <TR><TD ALIGN="LEFT" BORDER="1" SIDES="T" COLOR="#93C5FD" BGCOLOR="#EFF6FF">+ getDashboardRoute()</TD></TR>
+    </TABLE>
+  >];
+
+  Exam [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
+      <TR><TD BGCOLOR="#2563EB"><FONT COLOR="white"><B>Exam</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#EFF6FF">+ id: String<BR ALIGN="LEFT"/>+ teacherId: String<BR ALIGN="LEFT"/>+ questions: Question[]</TD></TR>
+      <TR><TD ALIGN="LEFT" BORDER="1" SIDES="T" COLOR="#93C5FD" BGCOLOR="#EFF6FF">+ addQuestion()<BR ALIGN="LEFT"/>+ updateQuestion()<BR ALIGN="LEFT"/>+ removeQuestion()</TD></TR>
+    </TABLE>
+  >];
+
+  Question [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#2563EB">
+      <TR><TD BGCOLOR="#2563EB"><FONT COLOR="white"><B>Question</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#EFF6FF">+ id: String<BR ALIGN="LEFT"/>+ answers: String[]<BR ALIGN="LEFT"/>+ correctAnswerIndex: Number</TD></TR>
+      <TR><TD ALIGN="LEFT" BORDER="1" SIDES="T" COLOR="#93C5FD" BGCOLOR="#EFF6FF">+ isCorrect()</TD></TR>
+    </TABLE>
+  >];
+
+  Result [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#7C3AED">
+      <TR><TD BGCOLOR="#7C3AED"><FONT COLOR="white"><B>Result</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#F5F3FF">+ examId: String<BR ALIGN="LEFT"/>+ studentId: String<BR ALIGN="LEFT"/>+ score: Number<BR ALIGN="LEFT"/>+ percent: Number</TD></TR>
+    </TABLE>
+  >];
+
+  AuthService [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>AuthService</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#ECFDF5">+ register()<BR ALIGN="LEFT"/>+ login()<BR ALIGN="LEFT"/>+ logout()</TD></TR>
+    </TABLE>
+  >];
+
+  ExamService [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>ExamService</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#ECFDF5">+ createExam()<BR ALIGN="LEFT"/>+ updateExam()<BR ALIGN="LEFT"/>+ searchExams()<BR ALIGN="LEFT"/>+ deleteExam()</TD></TR>
+    </TABLE>
+  >];
+
+  ResultService [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>ResultService</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#ECFDF5">+ calculateResult()<BR ALIGN="LEFT"/>+ saveResult()<BR ALIGN="LEFT"/>+ getResultsByStudent()<BR ALIGN="LEFT"/>+ getResultsByExam()</TD></TR>
+    </TABLE>
+  >];
+
+  ExamSessionService [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>ExamSessionService</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#ECFDF5">+ startOrResume()<BR ALIGN="LEFT"/>+ saveAnswer()<BR ALIGN="LEFT"/>+ getRemainingSeconds()<BR ALIGN="LEFT"/>+ finish()</TD></TR>
+    </TABLE>
+  >];
+
+  StorageService [label=<
+    <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="7" COLOR="#0F766E">
+      <TR><TD BGCOLOR="#0F766E"><FONT COLOR="white"><B>StorageService</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT" BGCOLOR="#ECFDF5">+ get()<BR ALIGN="LEFT"/>+ set()<BR ALIGN="LEFT"/>+ remove()</TD></TR>
+    </TABLE>
+  >];
+
+  {rank=same; User; Exam; Question}
+  {rank=same; AuthService; ExamService; ResultService; ExamSessionService}
+
+  User -> Exam [label="1 creates 0..*", minlen=1];
+  Exam -> Question [label="1 contains 0..*", arrowhead=diamond, dir=both, arrowtail=none];
+  User -> Result [label="1 receives 0..*", minlen=1];
+  Exam -> Result [label="1 produces 0..*", minlen=1];
+
+  AuthService -> StorageService;
+  ExamService -> StorageService;
+  ResultService -> StorageService;
+  ExamSessionService -> StorageService;
+
+  Result -> AuthService [style=invis, weight=2];
+  Result -> ExamService [style=invis, weight=2];
+}
