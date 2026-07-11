@@ -174,117 +174,23 @@ npm start
 
 ## 4. המחלקות העיקריות - UML
 
-```mermaid
-classDiagram
-  direction TB
+התרשים הבא מציג את מחלקות המודל, מחלקות השירות והקשרים המרכזיים ביניהן.
 
-  class User {
-    +String id
-    +String role
-    +getDashboardRoute()
-  }
+<p align="center">
+  <img src="./docs/uml-diagram.svg" alt="QuizProj UML class diagram" width="100%">
+</p>
 
-  class Exam {
-    +String id
-    +String teacherId
-    +Question[] questions
-    +addQuestion()
-    +updateQuestion()
-    +removeQuestion()
-  }
-
-  class Question {
-    +String id
-    +String[] answers
-    +Number correctAnswerIndex
-    +isCorrect()
-  }
-
-  class Result {
-    +String examId
-    +String studentId
-    +Number score
-    +Number percent
-  }
-
-  class StorageService {
-    +get()
-    +set()
-    +remove()
-  }
-
-  class AuthService {
-    +register()
-    +login()
-    +logout()
-  }
-
-  class ExamService {
-    +createExam()
-    +updateExam()
-    +searchExams()
-    +deleteExam()
-  }
-
-  class ResultService {
-    +calculateResult()
-    +saveResult()
-    +getResultsByStudent()
-    +getResultsByExam()
-  }
-
-  class ExamSessionService {
-    +startOrResume()
-    +saveAnswer()
-    +getRemainingSeconds()
-    +finish()
-  }
-
-  Exam "1" *-- "0..*" Question
-  User "1" --> "0..*" Exam
-  User "1" --> "0..*" Result
-  Exam "1" --> "0..*" Result
-  AuthService --> StorageService
-  ExamService --> StorageService
-  ResultService --> StorageService
-  ExamSessionService --> StorageService
-```
+> קובץ המקור של התרשים נמצא ב-`docs/uml-diagram.dot`, כך שניתן לעדכן ולייצר אותו מחדש באמצעות Graphviz.
 
 ## 5. FLOW מרכזי - סטודנט מבצע מבחן
 
-התרשים מציג מי קורא למי ומה עובר בין המודולים בתהליך המרכזי:
+התרשים מציג את זרימת העבודה המלאה: חיפוש מבחן, טעינת ניסיון פעיל, שמירת תשובות, הגשה, חישוב ציון ועדכון הדשבורדים.
 
-```mermaid
-sequenceDiagram
-  actor Student as סטודנט
-  participant SearchPage as search.js
-  participant Exams as ExamService
-  participant TakePage as take-exam.js
-  participant Results as ResultService
-  participant Session as ExamSessionService
-  participant Storage as StorageService
+<p align="center">
+  <img src="./docs/student-exam-flow.svg" alt="Student exam workflow diagram" width="88%">
+</p>
 
-  Student->>SearchPage: query, category
-  SearchPage->>Exams: searchExams(query, category)
-  Exams->>Storage: get("exams")
-  Exams-->>SearchPage: Exam[]
-  Student->>TakePage: open examId
-  TakePage->>Exams: getExamById(examId)
-  Exams->>Storage: get("exams")
-  Exams-->>TakePage: Exam
-  TakePage->>Session: startOrResume(exam, studentId)
-  Session->>Storage: get/set("examSessions")
-  Student->>TakePage: selectedAnswers
-  TakePage->>Session: saveAnswer(questionId, answerIndex)
-  TakePage->>Results: calculateResult(exam, student, answers, startedAt)
-  Results-->>TakePage: Result
-  TakePage->>Results: saveResult(result)
-  Results->>Storage: get("results")
-  Storage-->>Results: Result[]
-  Results->>Storage: set("results", results + result)
-  TakePage->>Session: finish(examId, studentId)
-  TakePage-->>Student: score and correct answers
-```
+> קובץ המקור של התרשים נמצא ב-`docs/student-exam-flow.dot`.
 
 הקלט המרכזי הוא `{ questionId: answerIndex }`. הפלט הוא אובייקט `Result`, הנשמר ב-`quizproj.results` ומוצג בדף הסטודנט ובתוצאות המורה.
 
@@ -298,6 +204,11 @@ QuizProj/
 |-- package.json              # תלויות ופקודות npm
 |-- README.md                 # מסמך טכני והוראות הרצה
 |-- TECHNICAL_DOCUMENT.md     # מסמך טכני מורחב
+|-- docs/
+|   |-- uml-diagram.svg       # תרשים UML שמוצג ב-README
+|   |-- uml-diagram.dot       # קוד המקור של תרשים UML
+|   |-- student-exam-flow.svg # תרשים זרימת ביצוע מבחן
+|   `-- student-exam-flow.dot # קוד המקור של תרשים ה-Flow
 |-- client/
 |   |-- index.html
 |   |-- pages/                # דפי מורה, סטודנט, הרשמה, התחברות ומבחנים
