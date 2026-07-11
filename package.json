@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "docs": "node scripts/build-documents.mjs"
+    "docs": "node scripts/build-documents.mjs",
+    "docs:uml": "node scripts/build-documents.mjs --uml-only"
   },
   "keywords": [
     "quiz",

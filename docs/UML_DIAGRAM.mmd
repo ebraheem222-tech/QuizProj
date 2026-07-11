@@ -1,5 +1,5 @@
 classDiagram
-  direction LR
+  direction TB
 
   class User {
     +String id
@@ -83,13 +83,13 @@ classDiagram
     +getStudentAverage(id) Number
   }
 
-  Exam "1" *-- "0..*" Question : contains
-  User "1" --> "0..*" Exam : teacher creates
-  User "1" --> "0..*" Result : student receives
-  Exam "1" --> "0..*" Result : has
-  AuthService --> StorageService : users
-  ExamService --> StorageService : exams
-  ResultService --> StorageService : results
-  AuthService ..> User : creates
-  ExamService ..> Exam : creates
-  ResultService ..> Result : creates
+  Exam "1" *-- "0..*" Question
+  User "1" --> "0..*" Exam
+  User "1" --> "0..*" Result
+  Exam "1" --> "0..*" Result
+  AuthService --> StorageService
+  ExamService --> StorageService
+  ResultService --> StorageService
+  AuthService ..> User
+  ExamService ..> Exam
+  ResultService ..> Result

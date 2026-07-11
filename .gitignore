@@ -5,3 +5,6 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
+
+# Superseded PDF name; use docs/QuizProj_TECHNICAL_DOCUMENT.pdf.
+docs/TECHNICAL_DOCUMENT.pdf

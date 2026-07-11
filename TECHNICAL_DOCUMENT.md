@@ -169,6 +169,8 @@ flowchart TD
 
 ```mermaid
 classDiagram
+  direction TB
+
   class User {
     +String id
     +String fullName
@@ -260,16 +262,16 @@ classDiagram
     +getStudentAverage(id) Number
   }
 
-  Exam "1" *-- "0..*" Question : contains
-  User "1" --> "0..*" Exam : teacher creates
-  User "1" --> "0..*" Result : student receives
-  Exam "1" --> "0..*" Result : has
-  AuthService --> StorageService : reads/writes users
-  ExamService --> StorageService : reads/writes exams
-  ResultService --> StorageService : reads/writes results
-  AuthService ..> User : creates
-  ExamService ..> Exam : creates
-  ResultService ..> Result : creates
+  Exam "1" *-- "0..*" Question
+  User "1" --> "0..*" Exam
+  User "1" --> "0..*" Result
+  Exam "1" --> "0..*" Result
+  AuthService --> StorageService
+  ExamService --> StorageService
+  ResultService --> StorageService
+  AuthService ..> User
+  ExamService ..> Exam
+  ResultService ..> Result
 ```
 
 ### אחריות המחלקות
@@ -415,4 +417,3 @@ QuizProj/
 - `SeedService` מוסיף משתמשי הדגמה ומבחן לדוגמה רק כאשר האחסון ריק.
 - גישה לדפי תפקיד נבדקת מול המשתמש המחובר. מורה יכול לנהל רק מבחן שה-`teacherId` שלו שווה למזהה המורה.
 - מחיקת מבחן כוללת גם מחיקת התוצאות המקושרות אליו.
-

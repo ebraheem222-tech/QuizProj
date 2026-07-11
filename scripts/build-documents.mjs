@@ -10,7 +10,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 const docsDir = path.join(projectRoot, "docs");
 const markdownPath = path.join(projectRoot, "TECHNICAL_DOCUMENT.md");
-const pdfPath = path.join(docsDir, "TECHNICAL_DOCUMENT.pdf");
+const pdfPath = path.join(docsDir, "QuizProj_TECHNICAL_DOCUMENT.pdf");
 const umlSourcePath = path.join(docsDir, "UML_DIAGRAM.mmd");
 const umlSvgPath = path.join(docsDir, "UML_DIAGRAM.svg");
 const umlPngPath = path.join(docsDir, "UML_DIAGRAM.png");
@@ -202,7 +202,12 @@ async function renderMermaid(page) {
       },
       flowchart: { htmlLabels: true, useMaxWidth: true },
       sequence: { useMaxWidth: true, wrap: true },
-      class: { useMaxWidth: true }
+      class: {
+        useMaxWidth: true,
+        nodeSpacing: 90,
+        rankSpacing: 110,
+        diagramPadding: 30
+      }
     });
 
     await window.mermaid.run({ querySelector: ".mermaid" });
@@ -250,6 +255,7 @@ async function buildUmlAssets(browser, source) {
 }
 
 async function main() {
+  const umlOnly = process.argv.includes("--uml-only");
   await mkdir(docsDir, { recursive: true });
   const [markdown, umlSource, executablePath] = await Promise.all([
     readFile(markdownPath, "utf8"),
@@ -264,13 +270,17 @@ async function main() {
   });
 
   try {
-    await buildTechnicalPdf(browser, markdown);
+    if (!umlOnly) {
+      await buildTechnicalPdf(browser, markdown);
+    }
     await buildUmlAssets(browser, umlSource);
   } finally {
     await browser.close();
   }
 
-  console.log(`Created ${path.relative(projectRoot, pdfPath)}`);
+  if (!umlOnly) {
+    console.log(`Created ${path.relative(projectRoot, pdfPath)}`);
+  }
   console.log(`Created ${path.relative(projectRoot, umlSvgPath)}`);
   console.log(`Created ${path.relative(projectRoot, umlPngPath)}`);
 }

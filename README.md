@@ -7,7 +7,7 @@
 
 קובצי הגשה מוכנים:
 
-- [מסמך טכני PDF](docs/TECHNICAL_DOCUMENT.pdf)
+- [מסמך טכני PDF](docs/QuizProj_TECHNICAL_DOCUMENT.pdf)
 - [תרשים UML כ-SVG](docs/UML_DIAGRAM.svg)
 - [תרשים UML כ-PNG](docs/UML_DIAGRAM.png)
 
@@ -15,6 +15,12 @@
 
 ```bash
 npm run docs
+```
+
+ליצירה מחדש של תרשים ה-UML בלבד:
+
+```bash
+npm run docs:uml
 ```
 
 ## קישורים
