@@ -68,13 +68,18 @@ function renderHeader(activeRoute) {
   });
 }
 
-export function initializePage({ activeRoute = "home", requireRole = null } = {}) {
+export function initializePage({ activeRoute = "home", requireRole = null, guestOnly = false } = {}) {
   seedService.initialize();
   applyStoredTheme();
   renderHeader(activeRoute);
   setupNavigation();
 
   const currentUser = authService.getCurrentUser();
+
+  if (guestOnly && currentUser) {
+    goTo(currentUser.getDashboardRoute());
+    return { authService, currentUser };
+  }
 
   if (requireRole && !currentUser) {
     goTo("login");
