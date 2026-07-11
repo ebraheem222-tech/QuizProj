@@ -21,6 +21,13 @@ npm start
 
 לאחר מכן פותחים בדפדפן את <http://localhost:3000>. אין לפתוח את הקבצים ישירות באמצעות `file://`, מפני ש-ES Modules ונתיבים כגון `/register` דורשים שרת HTTP.
 
+### פיצ'רים ממומשים
+
+- טיימר שנשמר גם לאחר רענון הדף, שמירה אוטומטית של תשובות והגשה אוטומטית בסיום הזמן.
+- רמות קושי לשאלות, קטגוריות, חיפוש וסינון מבחנים וערבוב סדר שאלות.
+- היסטוריית ציונים, ממוצע וציון גבוה, הצגת תשובות נכונות ודשבורד עם תרשימי ציונים.
+- מצב כהה, ייבוא וייצוא מבחן כ-JSON וניווט מותאם לתפקיד המשתמש.
+
 ---
 
 ## 2. דפי האתר והניווט ביניהם
@@ -50,6 +57,7 @@ npm start
 | `quizproj.currentUserId` | מחרוזת | מזהה המשתמש המחובר |
 | `quizproj.exams` | מערך | מבחנים והשאלות שבתוכם |
 | `quizproj.results` | מערך | ניסיונות וציוני תלמידים |
+| `quizproj.examSessions` | מערך | זמן, סדר שאלות ותשובות של מבחנים שעדיין לא הוגשו |
 | `quizproj.theme` | מחרוזת | ערך `light` או `dark` |
 
 ### משתמש (`User`)
@@ -137,6 +145,23 @@ npm start
 
 בתוצאה נשמר snapshot של נוסח השאלה, התשובה שנבחרה והתשובה הנכונה. לכן ניתן להציג ניסיון ישן גם אם המורה עורך את המבחן לאחר ההגשה.
 
+### ניסיון פעיל (`ExamSession`)
+
+```json
+{
+  "examId": "demo-js-exam",
+  "studentId": "demo-student",
+  "startedAt": "2026-07-11T10:00:00.000Z",
+  "expiresAt": "2026-07-11T10:15:00.000Z",
+  "questionOrder": ["question-2", "question-1"],
+  "selectedAnswers": {
+    "question-1": 0
+  }
+}
+```
+
+`ExamSessionService` שומר כל תשובה בזמן הבחירה. בזמן רענון הדף נטענים זמן הסיום, סדר השאלות והתשובות; כשהזמן מגיע לאפס נוצר ונשמר `Result` אוטומטית.
+
 ### קשרים בין הנתונים
 
 - `Exam.teacherId` מפנה אל `User.id` של מורה.
@@ -207,6 +232,13 @@ classDiagram
     +getResultsByExam()
   }
 
+  class ExamSessionService {
+    +startOrResume()
+    +saveAnswer()
+    +getRemainingSeconds()
+    +finish()
+  }
+
   Exam "1" *-- "0..*" Question
   User "1" --> "0..*" Exam
   User "1" --> "0..*" Result
@@ -214,6 +246,7 @@ classDiagram
   AuthService --> StorageService
   ExamService --> StorageService
   ResultService --> StorageService
+  ExamSessionService --> StorageService
 ```
 
 ## 5. FLOW מרכזי - סטודנט מבצע מבחן
@@ -227,6 +260,7 @@ sequenceDiagram
   participant Exams as ExamService
   participant TakePage as take-exam.js
   participant Results as ResultService
+  participant Session as ExamSessionService
   participant Storage as StorageService
 
   Student->>SearchPage: query, category
@@ -237,13 +271,17 @@ sequenceDiagram
   TakePage->>Exams: getExamById(examId)
   Exams->>Storage: get("exams")
   Exams-->>TakePage: Exam
+  TakePage->>Session: startOrResume(exam, studentId)
+  Session->>Storage: get/set("examSessions")
   Student->>TakePage: selectedAnswers
+  TakePage->>Session: saveAnswer(questionId, answerIndex)
   TakePage->>Results: calculateResult(exam, student, answers, startedAt)
   Results-->>TakePage: Result
   TakePage->>Results: saveResult(result)
   Results->>Storage: get("results")
   Storage-->>Results: Result[]
   Results->>Storage: set("results", results + result)
+  TakePage->>Session: finish(examId, studentId)
   TakePage-->>Student: score and correct answers
 ```
 
@@ -266,7 +304,7 @@ QuizProj/
 |       |-- css/styles.css
 |       `-- js/
 |           |-- models/       # מחלקות User, Exam, Question, Result
-|           |-- services/     # Auth, Exam, Result, Storage, Seed
+|           |-- services/     # Auth, Exam, Result, ExamSession, Storage, Seed
 |           |-- pages/        # לוגיקת DOM לכל דף
 |           |-- ui/           # תפריט, מצב כהה והודעות
 |           `-- utils/        # ניווט, HTML וייצוא קבצים

@@ -83,6 +83,14 @@ classDiagram
     +getStudentAverage(id) Number
   }
 
+  class ExamSessionService {
+    -StorageService storage
+    +startOrResume(data) Object
+    +saveAnswer(examId, studentId, questionId, answerIndex)
+    +getRemainingSeconds(session) Number
+    +finish(examId, studentId)
+  }
+
   Exam "1" *-- "0..*" Question
   User "1" --> "0..*" Exam
   User "1" --> "0..*" Result
@@ -90,6 +98,7 @@ classDiagram
   AuthService --> StorageService
   ExamService --> StorageService
   ResultService --> StorageService
+  ExamSessionService --> StorageService
   AuthService ..> User
   ExamService ..> Exam
   ResultService ..> Result

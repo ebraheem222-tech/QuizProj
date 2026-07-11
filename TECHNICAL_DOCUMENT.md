@@ -69,6 +69,7 @@ flowchart TD
 | `quizproj.currentUserId` | מחרוזת | מזהה המשתמש המחובר |
 | `quizproj.exams` | מערך | מבחנים והשאלות שבתוכם |
 | `quizproj.results` | מערך | ניסיונות וציוני תלמידים |
+| `quizproj.examSessions` | מערך | זמן, סדר שאלות ותשובות של מבחנים שעדיין לא הוגשו |
 | `quizproj.theme` | מחרוזת | ערך `light` או `dark` |
 
 ### משתמש (`User`)
@@ -262,6 +263,14 @@ classDiagram
     +getStudentAverage(id) Number
   }
 
+  class ExamSessionService {
+    -StorageService storage
+    +startOrResume(data) Object
+    +saveAnswer(examId, studentId, questionId, answerIndex)
+    +getRemainingSeconds(session) Number
+    +finish(examId, studentId)
+  }
+
   Exam "1" *-- "0..*" Question
   User "1" --> "0..*" Exam
   User "1" --> "0..*" Result
@@ -269,6 +278,7 @@ classDiagram
   AuthService --> StorageService
   ExamService --> StorageService
   ResultService --> StorageService
+  ExamSessionService --> StorageService
   AuthService ..> User
   ExamService ..> Exam
   ResultService ..> Result
@@ -281,6 +291,7 @@ classDiagram
 - `AuthService`: הרשמה, התחברות, התנתקות וקבלת המשתמש הנוכחי.
 - `ExamService`: יצירה, עריכה, חיפוש, מחיקה, ייבוא וייצוא של מבחנים.
 - `ResultService`: חישוב ציון, שמירת ניסיון, שליפת היסטוריה וחישוב ממוצע.
+- `ExamSessionService`: שמירת זמן הסיום, סדר השאלות והתשובות בזמן מבחן פעיל.
 - מודולי `pages/`: קוראים את הטפסים והאירועים מה-DOM ומפעילים את השירות המתאים.
 
 ---
@@ -297,7 +308,7 @@ classDiagram
 | עריכת מבחן ושאלות | תקין | נבדקת בעלות המורה לפני רינדור ונשמר המבחן המעודכן |
 | מחיקת מבחן | תקין | `teacher.js` מפעיל בנפרד מחיקת מבחן ומחיקת תוצאות |
 | חיפוש וביצוע מבחן | תקין | מוצגים רק מבחנים שיש בהם לפחות שאלה אחת |
-| טיימר ושליחת תשובות | תקין | סיום זמן שולח אוטומטית; בשליחה ידנית יש אישור לתשובות חסרות |
+| טיימר ושליחת תשובות | תקין | הזמן והתשובות נשמרים ברענון; סיום זמן שולח ושומר אוטומטית |
 | היסטוריה ותוצאות מורה | תקין | תוצאות מסוננות לפי סטודנט או מבחן וממוינות מהחדש לישן |
 
 ### FLOW 1 - הרשמה והפניה לפי תפקיד
@@ -520,9 +531,14 @@ sequenceDiagram
   actor Student as סטודנט
   participant TakePage as take-exam.js
   participant Results as ResultService
+  participant Session as ExamSessionService
   participant QuestionModel as Question
   participant Storage as StorageService
 
+  TakePage->>Session: startOrResume(exam, studentId)
+  Session->>Storage: get/set("examSessions")
+  Student->>TakePage: select answer
+  TakePage->>Session: saveAnswer(questionId, answerIndex)
   alt timer reaches zero
     TakePage->>TakePage: submitExam(true)
   else student clicks submit
@@ -544,6 +560,7 @@ sequenceDiagram
   TakePage->>Results: saveResult(result)
   Results->>Storage: get("results", [])
   Results->>Storage: set("results", results + result)
+  TakePage->>Session: finish(examId, studentId)
   TakePage-->>Student: render score and answer review
 ```
 
@@ -602,7 +619,7 @@ QuizProj/
 |       |-- css/styles.css
 |       `-- js/
 |           |-- models/       # מחלקות User, Exam, Question, Result
-|           |-- services/     # Auth, Exam, Result, Storage, Seed
+|           |-- services/     # Auth, Exam, Result, ExamSession, Storage, Seed
 |           |-- pages/        # לוגיקת DOM לכל דף
 |           |-- ui/           # תפריט, מצב כהה והודעות
 |           `-- utils/        # ניווט, HTML וייצוא קבצים
