@@ -18,6 +18,18 @@ function toggleTheme() {
   localStorage.setItem("quizproj.theme", nextTheme);
 }
 
+function logoutAndReturnHome() {
+  authService.logout();
+  const homeUrl = new URL(pathFor("home"), window.location.href);
+
+  if (window.location.pathname === homeUrl.pathname) {
+    window.location.reload();
+    return;
+  }
+
+  goTo("home");
+}
+
 function getRoleLinks(user) {
   if (!user) {
     return `
@@ -62,10 +74,7 @@ function renderHeader(activeRoute) {
 
   setupNavigation(header);
   header.querySelector("#themeToggle")?.addEventListener("click", toggleTheme);
-  header.querySelector("#logoutButton")?.addEventListener("click", () => {
-    authService.logout();
-    goTo("home");
-  });
+  header.querySelector("#logoutButton")?.addEventListener("click", logoutAndReturnHome);
 }
 
 export function initializePage({ activeRoute = "home", requireRole = null, guestOnly = false } = {}) {
