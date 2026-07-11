@@ -83,7 +83,7 @@ export function initializePage({ activeRoute = "home", requireRole = null } = {}
 
   if (requireRole && currentUser.role !== requireRole) {
     goTo(currentUser.getDashboardRoute());
-    return { authService, currentUser };
+    return { authService, currentUser: null };
   }
 
   return { authService, currentUser };

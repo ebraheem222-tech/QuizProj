@@ -214,11 +214,31 @@ async function renderMermaid(page) {
   });
 }
 
+async function saveDiagramPreviews(page) {
+  const previewDir = process.env.DOCS_DIAGRAM_PREVIEW_DIR;
+
+  if (!previewDir) {
+    return;
+  }
+
+  const outputDir = path.resolve(previewDir);
+  await mkdir(outputDir, { recursive: true });
+  const diagrams = await page.$$("figure.diagram");
+
+  for (const [index, diagram] of diagrams.entries()) {
+    const filename = `diagram-${String(index + 1).padStart(2, "0")}.png`;
+    await diagram.screenshot({ path: path.join(outputDir, filename), type: "png" });
+  }
+
+  console.log(`Created ${diagrams.length} diagram previews in ${outputDir}`);
+}
+
 async function buildTechnicalPdf(browser, markdown) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
   await page.setContent(createTechnicalDocumentHtml(markdown), { waitUntil: "domcontentloaded" });
   await renderMermaid(page);
+  await saveDiagramPreviews(page);
   await page.emulateMediaType("print");
   await page.pdf({
     path: pdfPath,

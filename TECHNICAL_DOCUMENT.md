@@ -287,6 +287,19 @@ classDiagram
 
 ## 5. תזרימי מערכת מרכזיים
 
+כל התזרימים הבאים נבדקו מול מודולי הדפים, השירותים והמודלים בפועל.
+
+| תהליך שנבדק | תוצאה | הערה |
+|---|---|---|
+| הרשמה והתחברות | תקין | נשמר `currentUserId` ומתבצעת הפניה לפי `role` |
+| הגנת דפים לפי תפקיד | תוקן ואומת | משתמש חסר מופנה להתחברות; תפקיד שגוי מופנה לדשבורד שלו ומודול הדף מקבל `null` |
+| יצירת מבחן | תוקן בתרשים | לאחר יצירה הרשימה מתרעננת; אין מעבר אוטומטי לדף הפרטים |
+| עריכת מבחן ושאלות | תקין | נבדקת בעלות המורה לפני רינדור ונשמר המבחן המעודכן |
+| מחיקת מבחן | תקין | `teacher.js` מפעיל בנפרד מחיקת מבחן ומחיקת תוצאות |
+| חיפוש וביצוע מבחן | תקין | מוצגים רק מבחנים שיש בהם לפחות שאלה אחת |
+| טיימר ושליחת תשובות | תקין | סיום זמן שולח אוטומטית; בשליחה ידנית יש אישור לתשובות חסרות |
+| היסטוריה ותוצאות מורה | תקין | תוצאות מסוננות לפי סטודנט או מבחן וממוינות מהחדש לישן |
+
 ### FLOW 1 - הרשמה והפניה לפי תפקיד
 
 ```mermaid
@@ -294,96 +307,283 @@ sequenceDiagram
   actor Visitor as משתמש חדש
   participant RegisterPage as register.js
   participant Auth as AuthService
-  participant UserModel as User
   participant Storage as StorageService
-  participant Router as router.js
+  participant Nav as router.js
 
-  Visitor->>RegisterPage: שולח fullName, nationalId, email, password, role
+  Visitor->>RegisterPage: submit userData
   RegisterPage->>Auth: register(userData)
   Auth->>Storage: get("users", [])
-  Auth->>Auth: בדיקת role, אימייל ותעודת זהות
-  Auth->>UserModel: new User(userData)
-  Auth->>Storage: set("users", users + user)
-  Auth->>Storage: set("currentUserId", user.id)
-  Auth-->>RegisterPage: User
-  RegisterPage->>Router: goTo(user.getDashboardRoute())
-  Router-->>Visitor: /teacher או /student
+  Auth->>Auth: validate role, email, ID
+  alt invalid or duplicate data
+    Auth-->>RegisterPage: throw Error
+    RegisterPage-->>Visitor: show error message
+  else valid data
+    Auth->>Auth: new User(userData)
+    Auth->>Storage: set("users", users + user)
+    Auth->>Storage: set("currentUserId", user.id)
+    Auth-->>RegisterPage: User
+    RegisterPage->>Nav: goTo(user.getDashboardRoute())
+    Nav-->>Visitor: open role dashboard
+  end
 ```
 
-המידע שעובר: אובייקט `userData`. הפלט הוא אובייקט `User` והנתיב נקבע לפי `role`.
+המידע שעובר: אובייקט `userData` עם שם, תעודת זהות, אימייל, סיסמה ותפקיד. בהצלחה מוחזר `User`; בכישלון נזרק `Error` ולא נשמר מידע חלקי.
 
-### FLOW 2 - מורה יוצר ועורך מבחן
+### FLOW 2 - התחברות והפניה לדשבורד
+
+```mermaid
+sequenceDiagram
+  actor AccountUser as משתמש קיים
+  participant LoginPage as login.js
+  participant Auth as AuthService
+  participant Storage as StorageService
+  participant Nav as router.js
+
+  AccountUser->>LoginPage: submit credentials
+  LoginPage->>Auth: login(identifier, password)
+  Auth->>Storage: get("users", [])
+  Auth->>Auth: match identifier and password
+  alt credentials are invalid
+    Auth-->>LoginPage: throw Error
+    LoginPage-->>AccountUser: show error message
+  else credentials are valid
+    Auth->>Storage: set("currentUserId", user.id)
+    Auth-->>LoginPage: User
+    LoginPage->>Nav: goTo(user.getDashboardRoute())
+    Nav-->>AccountUser: open role dashboard
+  end
+```
+
+`identifier` יכול להיות אימייל או תעודת זהות. הדשבורד נקבע על ידי `User.getDashboardRoute()`.
+
+### FLOW 3 - הגנת דף לפי תפקיד והתנתקות
+
+```mermaid
+sequenceDiagram
+  actor AccountUser as משתמש
+  participant PageModule as page module
+  participant Layout as layout.js
+  participant Auth as AuthService
+  participant Storage as StorageService
+  participant Nav as router.js
+
+  AccountUser->>PageModule: open protected route
+  PageModule->>Layout: initializePage(requireRole)
+  Layout->>Auth: getCurrentUser()
+  Auth->>Storage: get session data
+  Auth-->>Layout: User or null
+  alt no active session
+    Layout->>Nav: goTo("login")
+    Layout-->>PageModule: currentUser = null
+  else role does not match
+    Layout->>Nav: goTo(actual dashboard)
+    Layout-->>PageModule: currentUser = null
+  else role matches
+    Layout-->>PageModule: currentUser = User
+    PageModule-->>AccountUser: render protected page
+  end
+  opt click logout in header
+    AccountUser->>Layout: click logout
+    Layout->>Auth: logout()
+    Auth->>Storage: remove("currentUserId")
+    Layout->>Nav: goTo("home")
+  end
+```
+
+החזרת `currentUser = null` במקרה של תפקיד שגוי מונעת ממודול הדף להתחיל לרנדר בזמן שמתבצע ה-redirect.
+
+### FLOW 4 - מורה יוצר מבחן
 
 ```mermaid
 sequenceDiagram
   actor Teacher as מורה
   participant TeacherPage as teacher.js
+  participant Exams as ExamService
+  participant Storage as StorageService
   participant DetailsPage as exam-details.js
-  participant ExamService
-  participant ExamModel as Exam
-  participant Storage as StorageService
 
-  Teacher->>TeacherPage: ממלא title, description, category, code, duration
-  TeacherPage->>ExamService: createExam(examData + teacherId)
-  ExamService->>ExamModel: new Exam(examData)
-  ExamService->>Storage: set("exams", exams + exam)
-  ExamService-->>TeacherPage: Exam
-  TeacherPage-->>DetailsPage: ניווט /exam/:id
-  Teacher->>DetailsPage: מוסיף שאלה, תשובות ואינדקס נכון
-  DetailsPage->>ExamModel: addQuestion(questionData)
-  DetailsPage->>ExamService: saveExam(exam)
-  ExamService->>Storage: set("exams", updatedExams)
+  Teacher->>TeacherPage: submit examData
+  TeacherPage->>Exams: createExam(data)
+  Exams->>Storage: get("exams", [])
+  Exams->>Exams: validate or generate code
+  Exams->>Exams: new Exam(examData)
+  Exams->>Storage: set("exams", updated list)
+  Exams-->>TeacherPage: Exam
+  TeacherPage->>TeacherPage: reset form, refresh list
+  TeacherPage-->>Teacher: show created exam in list
+  Note over TeacherPage,Teacher: No automatic redirect after creation
+  Teacher->>DetailsPage: click management link /exam/:id
 ```
 
-המידע שעובר: `examData`, מזהה המורה, ובהמשך `questionData`. המבחן כולו נשמר מחדש במערך `quizproj.exams`.
+`examData` כולל `teacherId`, שם, תיאור, קטגוריה, קוד, משך והגדרת ערבוב. אם הקוד ריק השירות יוצר קוד ייחודי.
 
-### FLOW 3 - סטודנט מחפש ומבצע מבחן
-
-```mermaid
-sequenceDiagram
-  actor Student as סטודנט
-  participant SearchPage as search.js
-  participant TakePage as take-exam.js
-  participant ExamService
-  participant ResultService
-  participant Storage as StorageService
-
-  Student->>SearchPage: מזין query ו-category
-  SearchPage->>ExamService: searchExams(query, category)
-  ExamService->>Storage: get("exams", [])
-  ExamService-->>SearchPage: Exam[]
-  Student->>TakePage: בחירת /take/:id
-  TakePage->>ExamService: getExamById(id)
-  Student->>TakePage: בחירת תשובות ושליחה
-  TakePage->>ResultService: calculateResult(exam, student, selectedAnswers, startedAt)
-  ResultService-->>TakePage: Result
-  TakePage->>ResultService: saveResult(result)
-  ResultService->>Storage: set("results", results + result)
-  TakePage-->>Student: ציון ותשובות נכונות
-```
-
-המידע שעובר: מחרוזת חיפוש, קטגוריה, מזהה מבחן ומפה מסוג `{ questionId: answerIndex }`. הפלט הוא אובייקט `Result` מלא.
-
-### FLOW 4 - מורה צופה בתוצאות תלמידים
+### FLOW 5 - מורה עורך מבחן ומנהל שאלות
 
 ```mermaid
 sequenceDiagram
   actor Teacher as מורה
   participant DetailsPage as exam-details.js
-  participant Auth as AuthService
-  participant ExamService
-  participant ResultService
+  participant Exams as ExamService
+  participant ExamModel as Exam
   participant Storage as StorageService
 
-  Teacher->>DetailsPage: פתיחת /exam/:id
-  DetailsPage->>Auth: getCurrentUser()
-  DetailsPage->>ExamService: getExamById(id)
-  DetailsPage->>DetailsPage: בדיקה exam.teacherId = teacher.id
-  DetailsPage->>ResultService: getResultsByExam(id)
-  ResultService->>Storage: get("results", [])
-  ResultService-->>DetailsPage: Result[] ממוין לפי submittedAt
-  DetailsPage-->>Teacher: שם תלמיד, ציון, אחוז ותאריך
+  Teacher->>DetailsPage: open /exam/:id
+  DetailsPage->>Exams: getExamById(id)
+  Exams->>Storage: get("exams", [])
+  Exams-->>DetailsPage: Exam or null
+  alt exam missing or owned by another teacher
+    DetailsPage-->>Teacher: show ownership error
+  else teacher owns the exam
+    opt update general details
+      Teacher->>DetailsPage: submit updates
+      DetailsPage->>Exams: updateExam(exam.id, updates)
+      Exams->>Storage: set("exams", updated list)
+      Exams-->>DetailsPage: updated Exam
+    end
+    opt question action
+      Teacher->>DetailsPage: submit question action
+      alt add or edit
+        DetailsPage->>DetailsPage: new Question(data)
+        DetailsPage->>ExamModel: add or update question
+      else delete
+        DetailsPage->>ExamModel: remove question
+      end
+      DetailsPage->>Exams: saveExam(exam)
+      Exams->>Storage: set("exams", updated list)
+    end
+  end
 ```
+
+המזהה מגיע מ-`/exam/:id` ב-Express או מהפרמטר `?id=` ב-GitHub Pages. בדיקת הבעלות מתבצעת לפני הצגת טפסי הניהול.
+
+### FLOW 6 - מורה מוחק מבחן ותוצאות
+
+```mermaid
+sequenceDiagram
+  actor Teacher as מורה
+  participant TeacherPage as teacher.js
+  participant Exams as ExamService
+  participant Results as ResultService
+  participant Storage as StorageService
+
+  Teacher->>TeacherPage: click delete(examId)
+  TeacherPage-->>Teacher: request confirmation
+  alt deletion cancelled
+    TeacherPage-->>Teacher: no data changes
+  else deletion confirmed
+    TeacherPage->>Exams: deleteExam(examId)
+    Exams->>Storage: set("exams", filtered list)
+    TeacherPage->>Results: deleteResultsByExam(examId)
+    Results->>Storage: set("results", filtered list)
+    TeacherPage->>TeacherPage: refresh dashboard and list
+  end
+```
+
+המחיקה המדורגת מתוזמרת ב-`teacher.js`: `ExamService.deleteExam()` אינו מוחק תוצאות בעצמו, ולכן הדף מפעיל גם את `ResultService`.
+
+### FLOW 7 - סטודנט מחפש ופותח מבחן
+
+```mermaid
+sequenceDiagram
+  actor Student as סטודנט
+  participant SearchPage as search.js
+  participant Exams as ExamService
+  participant Storage as StorageService
+  participant TakePage as take-exam.js
+
+  Student->>SearchPage: input query and category
+  SearchPage->>Exams: searchExams(query, category)
+  Exams->>Storage: get("exams", [])
+  Exams->>Exams: filter available exams
+  Exams-->>SearchPage: Exam[]
+  SearchPage-->>Student: render available exams
+  Student->>TakePage: open /take/:id
+  TakePage->>Exams: getExamById(id)
+  Exams->>Storage: get("exams", [])
+  Exams-->>TakePage: Exam or null
+  alt exam is missing
+    TakePage-->>Student: show not found
+  else exam has no questions
+    TakePage-->>Student: show unavailable
+  else exam is available
+    TakePage->>TakePage: optional shuffle, start timer
+    TakePage-->>Student: render exam form
+  end
+```
+
+`searchExams()` מחפש בשם, בתיאור, בקטגוריה ובקוד, ומסיר מראש מבחנים ללא שאלות.
+
+### FLOW 8 - שליחת מבחן, חישוב ושמירת ציון
+
+```mermaid
+sequenceDiagram
+  actor Student as סטודנט
+  participant TakePage as take-exam.js
+  participant Results as ResultService
+  participant QuestionModel as Question
+  participant Storage as StorageService
+
+  alt timer reaches zero
+    TakePage->>TakePage: submitExam(true)
+  else student clicks submit
+    Student->>TakePage: submitExam(false)
+    opt answers missing in manual submit
+      TakePage-->>Student: request confirmation
+      break student cancels
+        TakePage-->>Student: return without saving
+      end
+    end
+  end
+  TakePage->>TakePage: collect answers
+  TakePage->>Results: calculateResult(payload)
+  loop each question
+    Results->>QuestionModel: isCorrect(answerIndex)
+    QuestionModel-->>Results: true or false
+  end
+  Results-->>TakePage: Result snapshot
+  TakePage->>Results: saveResult(result)
+  Results->>Storage: get("results", [])
+  Results->>Storage: set("results", results + result)
+  TakePage-->>Student: render score and answer review
+```
+
+המפה שנשלחת לחישוב היא `{ questionId: answerIndex }`. אם הסטודנט מבטל את אישור השליחה החסרה, הפונקציה נעצרת לפני חישוב או שמירה.
+
+### FLOW 9 - היסטוריית סטודנט ותוצאות מורה
+
+```mermaid
+sequenceDiagram
+  actor Viewer as משתמש
+  participant StudentPage as student.js
+  participant DetailsPage as exam-details.js
+  participant Results as ResultService
+  participant Auth as AuthService
+  participant Storage as StorageService
+
+  alt student opens dashboard
+    Viewer->>StudentPage: open /student
+    StudentPage->>Results: getResultsByStudent(studentId)
+    Results->>Storage: get("results", [])
+    Results-->>StudentPage: student results, newest first
+    StudentPage->>Results: getStudentAverage(studentId)
+    Results->>Storage: get("results", [])
+    Results-->>StudentPage: average percent
+    StudentPage-->>Viewer: render history and statistics
+  else teacher opens exam details
+    Viewer->>DetailsPage: open /exam/:id
+    DetailsPage->>Results: getResultsByExam(examId)
+    Results->>Storage: get("results", [])
+    Results-->>DetailsPage: exam results, newest first
+    loop each result row
+      DetailsPage->>Auth: getUserById(studentId)
+      Auth->>Storage: get("users", [])
+      Auth-->>DetailsPage: User or null
+    end
+    DetailsPage-->>Viewer: render student result rows
+  end
+```
+
+התוצאה שומרת snapshot של השאלה והתשובות, ולכן היסטוריית הסטודנט נשארת קריאה גם אם המבחן נערך לאחר ההגשה.
 
 ---
 

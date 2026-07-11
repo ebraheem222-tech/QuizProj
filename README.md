@@ -23,6 +23,12 @@ npm run docs
 npm run docs:uml
 ```
 
+לבדיקת תזרימי המערכת בדפדפן באופן אוטומטי:
+
+```bash
+npm run test:flows
+```
+
 ## קישורים
 
 - GitHub: https://github.com/ebraheem222-tech/QuizProj
