@@ -44,6 +44,19 @@
     <div id="takeExamMessage"></div>
     <form id="takeExamForm" class="exam-form"></form>
     <section id="examResultBox"></section>
+
+    <dialog id="examExitDialog" class="exam-exit-dialog" aria-labelledby="examExitDialogTitle">
+      <form method="dialog" class="exam-exit-content">
+        <p class="section-kicker">אזהרה</p>
+        <h2 id="examExitDialogTitle">לסיים את המבחן?</h2>
+        <p>יציאה מהדף תסיים את המבחן. כל התשובות שנבחרו יישמרו והתוצאה תוצג מיד.</p>
+        <p id="examExitAnswerStatus" class="exam-exit-answer-status"></p>
+        <div class="exam-exit-actions">
+          <button class="btn btn-outline-secondary" value="cancel" type="submit">המשך במבחן</button>
+          <button class="btn btn-danger" id="confirmExamExitButton" type="button">סיום ושמירת תשובות</button>
+        </div>
+      </form>
+    </dialog>
   </main>
   <script type="module" src="../assets/js/pages/take-exam.js"></script>
 </body>

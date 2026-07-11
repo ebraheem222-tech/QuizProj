@@ -393,6 +393,11 @@ a {
   overflow: hidden;
 }
 
+.exam-form .question-box.has-error {
+  border-color: #c93645;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #c93645 18%, transparent);
+}
+
 .question-header {
   padding: 18px 20px;
   background: var(--surface-soft);
@@ -419,6 +424,22 @@ a {
   display: grid;
   gap: 10px;
   padding: 18px 20px 20px;
+}
+
+.question-validation {
+  margin: -4px 20px 20px;
+  padding: 10px 12px;
+  color: #a61b29;
+  background: #fce8ea;
+  border: 1px solid #dc7b84;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .question-validation {
+  color: #ffc1c7;
+  background: #4d2025;
+  border-color: #9f4650;
 }
 
 .timer-box {
@@ -612,6 +633,71 @@ a {
   outline-offset: 2px;
 }
 
+.exam-exit-dialog {
+  width: min(520px, calc(100% - 32px));
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 5px solid #c93645;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.exam-exit-dialog::backdrop {
+  background: rgba(8, 12, 15, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+.exam-exit-content {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.exam-exit-content h2,
+.exam-exit-content p {
+  margin: 0;
+}
+
+.exam-exit-answer-status {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.exam-exit-answer-status.has-missing {
+  color: #a61b29;
+  background: #fce8ea;
+  border-color: #dc7b84;
+}
+
+.exam-exit-answer-status.is-complete {
+  color: #256442;
+  background: #e7f6ed;
+  border-color: #94cfaa;
+}
+
+[data-theme="dark"] .exam-exit-answer-status.has-missing {
+  color: #ffc1c7;
+  background: #4d2025;
+  border-color: #9f4650;
+}
+
+[data-theme="dark"] .exam-exit-answer-status.is-complete {
+  color: #b7ebc9;
+  background: #173d29;
+  border-color: #397452;
+}
+
+.exam-exit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .answer-option.correct {
   border-color: var(--success);
   background: color-mix(in srgb, var(--success) 12%, var(--surface));
@@ -686,5 +772,19 @@ a {
     align-items: start;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .exam-exit-content {
+    padding: 20px;
+  }
+
+  .exam-exit-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .exam-exit-actions .btn {
+    width: 100%;
   }
 }

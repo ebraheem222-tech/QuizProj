@@ -2,7 +2,7 @@ import { ExamService } from "../services/ExamService.js";
 import { ExamSessionService } from "../services/ExamSessionService.js";
 import { ResultService } from "../services/ResultService.js";
 import { initializePage } from "../ui/layout.js";
-import { showMessage } from "../ui/messages.js";
+import { clearMessage, showMessage } from "../ui/messages.js";
 import { escapeHtml, formatPercent } from "../utils/html.js";
 import { getCurrentRouteId, pathFor } from "../utils/router.js";
 
@@ -22,6 +22,9 @@ const progressBar = document.getElementById("examProgressBar");
 const message = document.getElementById("takeExamMessage");
 const form = document.getElementById("takeExamForm");
 const resultBox = document.getElementById("examResultBox");
+const exitDialog = document.getElementById("examExitDialog");
+const exitAnswerStatus = document.getElementById("examExitAnswerStatus");
+const confirmExitButton = document.getElementById("confirmExamExitButton");
 
 let startedAt = new Date().toISOString();
 let remainingSeconds = 0;
@@ -29,6 +32,8 @@ let timerId = null;
 let submitted = false;
 let displayQuestions = [];
 let session = null;
+let historyGuardActive = false;
+let validationMessageVisible = false;
 
 if (currentUser) {
   if (!exam) {
@@ -56,6 +61,7 @@ function startExam() {
   restoreSavedAnswers();
   updateProgress();
   startTimer();
+  activateNavigationGuard();
 
   if (sessionState.resumed && examSessionService.getRemainingSeconds(session) !== 0) {
     showMessage(message, "המשך המבחן נטען. התשובות והזמן נשמרו.", "info");
@@ -85,6 +91,22 @@ function getDifficultyLabel(difficulty) {
     medium: "בינוני",
     hard: "קשה"
   }[getDifficultyKey(difficulty)];
+}
+
+function getMissingAnswersShortText(count) {
+  return count === 1
+    ? "לא נבחרה תשובה בשאלה אחת."
+    : `לא נבחרה תשובה ב-${count} שאלות.`;
+}
+
+function getMissingAnswersWarningText(count) {
+  return count === 1
+    ? "לא נבחרה תשובה בשאלה המסומנת באדום."
+    : `לא נבחרה תשובה ב-${count} שאלות. השאלות מסומנות באדום.`;
+}
+
+function getUnansweredSummary(count) {
+  return count === 1 ? "שאלה אחת ללא תשובה" : `${count} שאלות ללא תשובה`;
 }
 
 function renderExamForm() {
@@ -121,6 +143,7 @@ function renderExamForm() {
             </label>
           `).join("")}
         </div>
+        <p class="question-validation" role="alert" hidden>לא נבחרה תשובה לשאלה זו.</p>
       </section>
     `).join("")}
     <button class="btn btn-primary exam-submit-button" id="submitExamButton" type="submit">סיום ושליחת מבחן</button>
@@ -184,10 +207,11 @@ form.addEventListener("change", event => {
     answerInput.name,
     answerInput.value
   );
+  clearQuestionWarning(answerInput.name);
   updateProgress();
 });
 
-function submitExam(isAutomatic) {
+function submitExam(isAutomatic, { skipMissingConfirmation = false, fromNavigation = false } = {}) {
   if (submitted) {
     return;
   }
@@ -195,7 +219,13 @@ function submitExam(isAutomatic) {
   const selectedAnswers = collectSelectedAnswers();
   const missingAnswers = exam.questions.filter(question => selectedAnswers[question.id] === undefined);
 
-  if (!isAutomatic && missingAnswers.length > 0) {
+  if (missingAnswers.length > 0) {
+    showMissingAnswerWarnings(missingAnswers, {
+      focusFirst: !isAutomatic && !skipMissingConfirmation
+    });
+  }
+
+  if (!isAutomatic && !skipMissingConfirmation && missingAnswers.length > 0) {
     const confirmed = confirm("לא ענית על כל השאלות. לשלוח בכל זאת?");
 
     if (!confirmed) {
@@ -205,9 +235,18 @@ function submitExam(isAutomatic) {
 
   submitted = true;
   clearInterval(timerId);
+  exitDialog.open && exitDialog.close();
+  releaseNavigationGuard();
 
   if (isAutomatic) {
     showMessage(message, "הזמן הסתיים והמבחן הוגש אוטומטית.", "warning");
+  } else if (fromNavigation) {
+    showMessage(message, "המבחן הסתיים והתשובות נשמרו. התוצאה מוצגת למטה.", "success");
+  } else if (missingAnswers.length > 0) {
+    showMessage(message, `המבחן הוגש עם ${getUnansweredSummary(missingAnswers.length)}.`, "warning");
+  } else if (validationMessageVisible) {
+    clearMessage(message);
+    validationMessageVisible = false;
   }
 
   const result = resultService.calculateResult({
@@ -222,6 +261,63 @@ function submitExam(isAutomatic) {
   markAnswers(result);
   disableForm();
   renderResult(result, isAutomatic);
+}
+
+function getMissingAnswers() {
+  const selectedAnswers = collectSelectedAnswers();
+
+  return exam.questions.filter(question => selectedAnswers[question.id] === undefined);
+}
+
+function showMissingAnswerWarnings(missingAnswers, { focusFirst = true } = {}) {
+  const missingIds = new Set(missingAnswers.map(question => question.id));
+  const questionBoxes = [...form.querySelectorAll(".question-box")];
+
+  questionBoxes.forEach(questionBox => {
+    const isMissing = missingIds.has(questionBox.dataset.questionId);
+    questionBox.classList.toggle("has-error", isMissing);
+    questionBox.querySelector(".question-validation").hidden = !isMissing;
+  });
+
+  if (missingAnswers.length === 0) {
+    if (validationMessageVisible) {
+      clearMessage(message);
+      validationMessageVisible = false;
+    }
+    return;
+  }
+
+  validationMessageVisible = true;
+  showMessage(
+    message,
+    getMissingAnswersWarningText(missingAnswers.length),
+    "danger"
+  );
+
+  if (focusFirst) {
+    const firstMissingBox = questionBoxes.find(questionBox => (
+      questionBox.dataset.questionId === missingAnswers[0].id
+    ));
+    firstMissingBox?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function clearQuestionWarning(questionId) {
+  const questionBox = [...form.querySelectorAll(".question-box")].find(box => (
+    box.dataset.questionId === questionId
+  ));
+
+  if (!questionBox) {
+    return;
+  }
+
+  questionBox.classList.remove("has-error");
+  questionBox.querySelector(".question-validation").hidden = true;
+
+  if (validationMessageVisible && !form.querySelector(".question-box.has-error")) {
+    clearMessage(message);
+    validationMessageVisible = false;
+  }
 }
 
 function collectSelectedAnswers() {
@@ -258,6 +354,94 @@ function updateProgress() {
   progressBar.style.width = `${percent}%`;
 }
 
+function isExamInProgress() {
+  return Boolean(session) && !submitted;
+}
+
+function activateNavigationGuard() {
+  if (historyGuardActive) {
+    return;
+  }
+
+  history.pushState({ quizExamGuard: true }, "", window.location.href);
+  historyGuardActive = true;
+}
+
+function releaseNavigationGuard() {
+  if (!historyGuardActive) {
+    return;
+  }
+
+  historyGuardActive = false;
+  history.back();
+}
+
+function requestExitConfirmation() {
+  if (!isExamInProgress() || exitDialog.open) {
+    return;
+  }
+
+  const missingAnswers = getMissingAnswers();
+  showMissingAnswerWarnings(missingAnswers, { focusFirst: false });
+
+  if (missingAnswers.length > 0) {
+    exitAnswerStatus.textContent = getMissingAnswersShortText(missingAnswers.length);
+    exitAnswerStatus.className = "exam-exit-answer-status has-missing";
+  } else {
+    exitAnswerStatus.textContent = "ענית על כל השאלות.";
+    exitAnswerStatus.className = "exam-exit-answer-status is-complete";
+  }
+
+  if (typeof exitDialog.showModal === "function") {
+    exitDialog.showModal();
+    return;
+  }
+
+  if (confirm("לסיים את המבחן ולשמור את התשובות שנבחרו?")) {
+    submitExam(false, { skipMissingConfirmation: true, fromNavigation: true });
+  }
+}
+
+document.addEventListener("click", event => {
+  if (!(event.target instanceof Element) || !isExamInProgress()) {
+    return;
+  }
+
+  const navigationControl = event.target.closest('a[href], #logoutButton');
+
+  if (!navigationControl) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  requestExitConfirmation();
+}, true);
+
+confirmExitButton.addEventListener("click", () => {
+  exitDialog.close();
+  submitExam(false, { skipMissingConfirmation: true, fromNavigation: true });
+});
+
+window.addEventListener("popstate", () => {
+  if (!isExamInProgress()) {
+    return;
+  }
+
+  history.pushState({ quizExamGuard: true }, "", window.location.href);
+  historyGuardActive = true;
+  requestExitConfirmation();
+});
+
+window.addEventListener("beforeunload", event => {
+  if (!isExamInProgress()) {
+    return;
+  }
+
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 function markAnswers(result) {
   const options = [...form.querySelectorAll(".answer-option")];
 
@@ -292,7 +476,7 @@ function renderResult(result, isAutomatic) {
       <h2>${isAutomatic ? "הזמן נגמר" : "תוצאה"}</h2>
       <p class="lead">ציון: ${result.score}/${result.totalQuestions} (${formatPercent(result.percent)})</p>
       <p>${isAutomatic ? "המבחן הוגש אוטומטית וכל התשובות שנבחרו נשמרו." : "המבחן נשמר בהיסטוריית הציונים שלך."}</p>
-      ${unanswered > 0 ? `<p class="meta-line">שאלות ללא תשובה: ${unanswered}</p>` : ""}
+      ${unanswered > 0 ? `<p class="meta-line">${getUnansweredSummary(unanswered)}</p>` : ""}
       <div class="item-actions">
         <a class="btn btn-primary" href="${pathFor("student")}">דף סטודנט</a>
         <a class="btn btn-outline-primary" href="${pathFor("search")}">חיפוש מבחן נוסף</a>
