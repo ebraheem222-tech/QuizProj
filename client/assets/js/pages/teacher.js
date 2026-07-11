@@ -1,6 +1,7 @@
 import { ExamService } from "../services/ExamService.js";
 import { ResultService } from "../services/ResultService.js";
 import { initializePage } from "../ui/layout.js";
+import { BarChart } from "../ui/BarChart.js";
 import { emptyState, showMessage } from "../ui/messages.js";
 import { downloadTextFile } from "../utils/download.js";
 import { escapeHtml, formatDate, formatPercent, getFormValues, toNumber } from "../utils/html.js";
@@ -15,6 +16,10 @@ const dashboard = document.getElementById("teacherDashboard");
 const examForm = document.getElementById("examForm");
 const examList = document.getElementById("teacherExamList");
 const searchInput = document.getElementById("teacherSearchInput");
+const scoreChart = new BarChart(document.getElementById("teacherScoreChart"), {
+  ariaLabel: "ממוצע ציונים לפי מבחן",
+  emptyText: "עדיין אין מבחנים להצגה בתרשים."
+});
 
 if (currentUser) {
   renderExamForm();
@@ -115,6 +120,20 @@ function renderTeacherPage() {
     <div class="stat-tile"><strong>${teacherResults.length}</strong><span>הגשות</span></div>
     <div class="stat-tile"><strong>${formatPercent(average)}</strong><span>ממוצע ציונים</span></div>
   `;
+
+  scoreChart.render(allTeacherExams.map(exam => {
+    const results = resultService.getResultsByExam(exam.id);
+    const examAverage = results.length === 0
+      ? 0
+      : Math.round(results.reduce((sum, result) => sum + result.percent, 0) / results.length);
+
+    return {
+      label: exam.title,
+      value: examAverage,
+      valueLabel: formatPercent(examAverage),
+      meta: results.length === 1 ? "הגשה אחת" : `${results.length} הגשות`
+    };
+  }), { maxValue: 100 });
 
   renderExamList(exams);
 }

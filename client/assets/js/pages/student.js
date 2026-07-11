@@ -1,6 +1,7 @@
 import { ExamService } from "../services/ExamService.js";
 import { ResultService } from "../services/ResultService.js";
 import { initializePage } from "../ui/layout.js";
+import { BarChart } from "../ui/BarChart.js";
 import { emptyState } from "../ui/messages.js";
 import { escapeHtml, formatDate, formatPercent } from "../utils/html.js";
 import { pathFor } from "../utils/router.js";
@@ -11,9 +12,28 @@ const resultService = new ResultService();
 
 const dashboard = document.getElementById("studentDashboard");
 const history = document.getElementById("studentHistory");
+const scoreChart = new BarChart(document.getElementById("studentScoreChart"), {
+  ariaLabel: "התקדמות ציוני הסטודנט",
+  emptyText: "התרשים יוצג לאחר הגשת המבחן הראשון."
+});
 
 if (currentUser) {
   renderStudentPage();
+}
+
+function formatDuration(durationSeconds) {
+  const seconds = Math.max(0, Number(durationSeconds) || 0);
+
+  if (seconds < 60) {
+    return `${seconds} שניות`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  return remainingSeconds === 0
+    ? `${minutes} דקות`
+    : `${minutes} דקות ${remainingSeconds} שניות`;
 }
 
 function renderStudentPage() {
@@ -28,6 +48,14 @@ function renderStudentPage() {
     <div class="stat-tile"><strong>${formatPercent(best)}</strong><span>ציון גבוה</span></div>
     <div class="stat-tile"><strong>${lastSubmittedAt ? formatDate(lastSubmittedAt) : "-"}</strong><span>הגשה אחרונה</span></div>
   `;
+
+  const latestResults = results.slice(0, 8).reverse();
+  scoreChart.render(latestResults.map(result => ({
+    label: result.examTitle,
+    value: result.percent,
+    valueLabel: formatPercent(result.percent),
+    meta: formatDate(result.submittedAt)
+  })), { maxValue: 100 });
 
   renderHistory(results);
 }
@@ -59,7 +87,7 @@ function renderHistory(results) {
               <td>${escapeHtml(result.examTitle)}</td>
               <td>${formatPercent(result.percent)}</td>
               <td>${result.score}/${result.totalQuestions}</td>
-              <td>${Math.round(result.durationSeconds / 60)} דקות</td>
+              <td>${formatDuration(result.durationSeconds)}</td>
               <td>${formatDate(result.submittedAt)}</td>
               <td>
                 ${exam ? `<a class="btn btn-outline-primary btn-sm" href="${pathFor("takeExam", { id: exam.id })}">ביצוע חוזר</a>` : "-"}
