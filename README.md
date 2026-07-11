@@ -1,109 +1,152 @@
-# QuizProj - מסמך טכני
+# מסמך טכני - QuizProj
 
-מערכת מבחנים צד לקוח המבוססת על ES Modules, מחלקות OOP, JSON ו-`localStorage`. שרת Node.js עם Express מגיש את תיקיית `client/` ומספק routes נקיים.
+## 1. פרטי הפרויקט וקישורים
 
-## כתובות GitHub ו-Deploy
+**שם הפרויקט:** QuizProj - מערכת מבחנים צד לקוח
 
-- GitHub: <https://github.com/ebraheem222-tech/QuizProj>
-- Deploy - GitHub Pages: <https://ebraheem222-tech.github.io/QuizProj/>
-- הרצה מקומית: <http://localhost:3000>
+**טכנולוגיות:** HTML, CSS, JavaScript, ES Modules, OOP, JSON, `localStorage`, Node.js ו-Express.
+
+- קוד מקור ב-GitHub: <https://github.com/ebraheem222-tech/QuizProj>
+- אתר GitHub Pages: <https://ebraheem222-tech.github.io/QuizProj/>
+- כתובת בהרצה מקומית: <http://localhost:3000>
+
+המערכת שומרת את המידע בדפדפן בלבד. שרת Express אינו שומר מידע ואינו כולל בסיס נתונים; תפקידו להגיש את תיקיית `client/` כאתר סטטי ולספק כתובות URL נקיות.
+
+### הרצה מקומית
 
 ```bash
 npm install
 npm start
 ```
 
-יש לפתוח את `http://localhost:3000` ולא להשתמש ב-`file://`, כדי ש-ES Modules ונתיבי Express יעבדו כראוי.
+לאחר מכן פותחים בדפדפן את <http://localhost:3000>. אין לפתוח את הקבצים ישירות באמצעות `file://`, מפני ש-ES Modules ונתיבים כגון `/register` דורשים שרת HTTP.
 
-## דפים באתר והניווט ביניהם
+---
 
-| דף | נתיב Express | ניווט מרכזי |
+## 2. דפי האתר והניווט ביניהם
+
+| דף | נתיב Express מקומי | נתיב סטטי ב-GitHub Pages | הרשאה | תפקיד הדף |
+|---|---|---|---|---|
+| דף ראשי | `/` | `/QuizProj/client/index.html` | כולם | הצגת הפרויקט וקישורים להרשמה ולהתחברות |
+| הרשמה | `/register` | `/QuizProj/client/pages/register.html` | אורח | יצירת משתמש מסוג מורה או סטודנט |
+| התחברות | `/login` | `/QuizProj/client/pages/login.html` | אורח | התחברות באמצעות אימייל או תעודת זהות |
+| דף מורה | `/teacher` | `/QuizProj/client/pages/teacher.html` | מורה | יצירה, חיפוש, מחיקה, ייבוא וייצוא של מבחנים |
+| פרטי מבחן | `/exam/:id` | `/QuizProj/client/pages/exam-details.html?id=:id` | מורה בעל המבחן | עריכת מבחן, ניהול שאלות וצפייה בתוצאות |
+| דף סטודנט | `/student` | `/QuizProj/client/pages/student.html` | סטודנט | היסטוריית מבחנים, ציונים וממוצע |
+| חיפוש מבחן | `/search` | `/QuizProj/client/pages/search.html` | סטודנט | חיפוש לפי שם, תיאור, קטגוריה או קוד |
+| ביצוע מבחן | `/take/:id` | `/QuizProj/client/pages/take-exam.html?id=:id` | סטודנט | מענה על שאלות, טיימר ושליחת התוצאה |
+
+המודול `router.js` יוצר את הכתובת המתאימה לסביבת ההרצה. בהרצה עם Node הוא מחזיר נתיב נקי, לדוגמה `/exam/123`. ב-GitHub Pages הוא מחזיר נתיב לקובץ HTML עם מזהה ב-query string, לדוגמה `exam-details.html?id=123`.
+
+---
+
+## 3. פורמט הנתונים הנשמרים כ-JSON
+
+המחלקה `StorageService` מוסיפה את התחילית `quizproj.` לכל מפתח, ממירה אובייקטים ל-JSON באמצעות `JSON.stringify`, וקוראת אותם באמצעות `JSON.parse`.
+
+| מפתח ב-`localStorage` | סוג הערך | תוכן |
 |---|---|---|
-| דף ראשי | `/` | מעבר להרשמה או להתחברות |
-| הרשמה | `/register` | לאחר הרשמה: מורה עובר ל-`/teacher`, סטודנט ל-`/student` |
-| התחברות | `/login` | מעבר לדשבורד המתאים לפי תפקיד המשתמש |
-| דף מורה | `/teacher` | יצירת מבחן ומעבר לניהול מבחן ב-`/exam/:id` |
-| פרטי מבחן | `/exam/:id` | עריכת מבחן, ניהול שאלות וצפייה בתוצאות |
-| דף סטודנט | `/student` | היסטוריית ציונים ומעבר לחיפוש מבחן |
-| חיפוש מבחן | `/search` | בחירת מבחן ומעבר ל-`/take/:id` |
-| ביצוע מבחן | `/take/:id` | שליחת תשובות, הצגת ציון וחזרה לדף הסטודנט |
+| `quizproj.users` | מערך | משתמשים רשומים |
+| `quizproj.currentUserId` | מחרוזת | מזהה המשתמש המחובר |
+| `quizproj.exams` | מערך | מבחנים והשאלות שבתוכם |
+| `quizproj.results` | מערך | ניסיונות וציוני תלמידים |
+| `quizproj.theme` | מחרוזת | ערך `light` או `dark` |
 
-כפתור ההתנתקות נמצא בכותרת הדפים. הוא מוחק את `quizproj.currentUserId` ומחזיר את המשתמש לדף הראשי. ב-GitHub Pages אותם דפים זמינים כקובצי HTML תחת `client/pages/`.
-
-## פורמט הנתונים הנשמרים ב-JSON
-
-כל מאפיין ראשי בדוגמה מייצג מפתח נפרד ב-`localStorage`. השירות ממיר את נתוני המערכת באמצעות `JSON.stringify` ו-`JSON.parse`; ערך העיצוב נשמר כמחרוזת רגילה.
+### משתמש (`User`)
 
 ```json
 {
-  "quizproj.users": [
-    {
-      "id": "user-id",
-      "fullName": "שם המשתמש",
-      "nationalId": "123456789",
-      "email": "user@example.com",
-      "password": "1234",
-      "role": "student",
-      "createdAt": "2026-07-11T10:00:00.000Z"
-    }
-  ],
-  "quizproj.currentUserId": "user-id",
-  "quizproj.exams": [
-    {
-      "id": "exam-id",
-      "teacherId": "teacher-id",
-      "title": "JavaScript Basics",
-      "description": "מבחן לדוגמה",
-      "category": "JavaScript",
-      "code": "JS-101",
-      "durationMinutes": 15,
-      "shuffleQuestions": true,
-      "questions": [
-        {
-          "id": "question-id",
-          "text": "מהי המטרה של localStorage?",
-          "answers": ["שמירת נתונים", "עיצוב", "שרת", "שליחת אימייל"],
-          "correctAnswerIndex": 0,
-          "difficulty": "easy"
-        }
-      ],
-      "createdAt": "2026-07-11T10:00:00.000Z",
-      "updatedAt": "2026-07-11T10:00:00.000Z"
-    }
-  ],
-  "quizproj.results": [
-    {
-      "id": "result-id",
-      "examId": "exam-id",
-      "examTitle": "JavaScript Basics",
-      "studentId": "user-id",
-      "studentName": "שם המשתמש",
-      "answers": [
-        {
-          "questionId": "question-id",
-          "questionText": "מהי המטרה של localStorage?",
-          "answerIndex": 0,
-          "selectedAnswer": "שמירת נתונים",
-          "correctAnswerIndex": 0,
-          "correctAnswer": "שמירת נתונים",
-          "isCorrect": true
-        }
-      ],
-      "score": 1,
-      "totalQuestions": 1,
-      "percent": 100,
-      "startedAt": "2026-07-11T10:00:00.000Z",
-      "submittedAt": "2026-07-11T10:02:00.000Z",
-      "durationSeconds": 120
-    }
-  ],
-  "quizproj.theme": "light"
+  "id": "demo-student",
+  "fullName": "סטודנט הדגמה",
+  "nationalId": "222222222",
+  "email": "student@demo.com",
+  "password": "1234",
+  "role": "student",
+  "createdAt": "2026-07-10T00:00:00.000Z"
 }
 ```
 
-הסיסמאות נשמרות כטקסט רגיל מפני שזהו פרויקט לימודי הפועל בדפדפן בלבד. במערכת אמיתית יש לבצע אימות ושמירת סיסמאות בצד שרת.
+- `role` יכול להיות `teacher` או `student`.
+- `id` נוצר באמצעות `crypto.randomUUID()`.
+- בפרויקט לימודי זה הסיסמה נשמרת כטקסט רגיל. במערכת אמיתית יש לבצע אימות בצד שרת ולשמור hash בלבד.
 
-## המחלקות העיקריות - UML
+### מבחן (`Exam`) ושאלה (`Question`)
+
+```json
+{
+  "id": "demo-js-exam",
+  "teacherId": "demo-teacher",
+  "title": "JavaScript Basics",
+  "description": "מבחן הדגמה קצר",
+  "category": "JavaScript",
+  "code": "JS-DEMO",
+  "durationMinutes": 15,
+  "shuffleQuestions": true,
+  "questions": [
+    {
+      "id": "question-id",
+      "text": "מהי המטרה של localStorage?",
+      "answers": [
+        "שמירת נתונים בדפדפן",
+        "שליחת אימיילים",
+        "הרצת שרת",
+        "עיצוב CSS"
+      ],
+      "correctAnswerIndex": 0,
+      "difficulty": "easy"
+    }
+  ],
+  "createdAt": "2026-07-10T00:00:00.000Z",
+  "updatedAt": "2026-07-10T00:00:00.000Z"
+}
+```
+
+- `teacherId` מקשר את המבחן למורה שיצר אותו.
+- `code` הוא קוד חיפוש ייחודי למבחן.
+- `correctAnswerIndex` הוא מיקום התשובה הנכונה במערך `answers`, החל מ-0.
+- `difficulty` יכול להיות `easy`, `medium` או `hard`.
+
+### תוצאה (`Result`)
+
+```json
+{
+  "id": "result-id",
+  "examId": "demo-js-exam",
+  "examTitle": "JavaScript Basics",
+  "studentId": "demo-student",
+  "studentName": "סטודנט הדגמה",
+  "answers": [
+    {
+      "questionId": "question-id",
+      "questionText": "מהי המטרה של localStorage?",
+      "answerIndex": 0,
+      "selectedAnswer": "שמירת נתונים בדפדפן",
+      "correctAnswerIndex": 0,
+      "correctAnswer": "שמירת נתונים בדפדפן",
+      "isCorrect": true
+    }
+  ],
+  "score": 1,
+  "totalQuestions": 1,
+  "percent": 100,
+  "startedAt": "2026-07-10T10:00:00.000Z",
+  "submittedAt": "2026-07-10T10:04:00.000Z",
+  "durationSeconds": 240
+}
+```
+
+בתוצאה נשמר snapshot של נוסח השאלה, התשובה שנבחרה והתשובה הנכונה. לכן ניתן להציג ניסיון ישן גם אם המורה עורך את המבחן לאחר ההגשה.
+
+### קשרים בין הנתונים
+
+- `Exam.teacherId` מפנה אל `User.id` של מורה.
+- `Result.examId` מפנה אל `Exam.id`.
+- `Result.studentId` מפנה אל `User.id` של סטודנט.
+- `Result.answers[].questionId` מפנה אל `Question.id` שהיה קיים בזמן ההגשה.
+
+---
+
+## 4. המחלקות העיקריות - UML
 
 ```mermaid
 classDiagram
@@ -173,7 +216,7 @@ classDiagram
   ResultService --> StorageService
 ```
 
-## FLOW מרכזי - סטודנט מבצע מבחן
+## 5. FLOW מרכזי - סטודנט מבצע מבחן
 
 התרשים מציג מי קורא למי ומה עובר בין המודולים בתהליך המרכזי:
 
@@ -205,3 +248,36 @@ sequenceDiagram
 ```
 
 הקלט המרכזי הוא `{ questionId: answerIndex }`. הפלט הוא אובייקט `Result`, הנשמר ב-`quizproj.results` ומוצג בדף הסטודנט ובתוצאות המורה.
+
+---
+
+## 6. מבנה הפרויקט
+
+```text
+QuizProj/
+|-- server.js                 # שרת Express ונתיבי app.get
+|-- package.json              # תלויות ופקודות npm
+|-- README.md                 # מסמך טכני והוראות הרצה
+|-- TECHNICAL_DOCUMENT.md     # מסמך טכני מורחב
+|-- client/
+|   |-- index.html
+|   |-- pages/                # דפי מורה, סטודנט, הרשמה, התחברות ומבחנים
+|   `-- assets/
+|       |-- css/styles.css
+|       `-- js/
+|           |-- models/       # מחלקות User, Exam, Question, Result
+|           |-- services/     # Auth, Exam, Result, Storage, Seed
+|           |-- pages/        # לוגיקת DOM לכל דף
+|           |-- ui/           # תפריט, מצב כהה והודעות
+|           `-- utils/        # ניווט, HTML וייצוא קבצים
+`-- index.html                # הפניה לתיקיית client עבור GitHub Pages
+```
+
+## 7. הערות ארכיטקטורה
+
+- המערכת פועלת ללא Backend עסקי: אין API ואין מסד נתונים.
+- Express מוגדר ב-`server.js` עם `express.static(clientDir)` ועם `app.get` לכל דף.
+- ה-DI מתבצע באמצעות בנאי השירותים, לדוגמה `new AuthService(storage)`. כאשר לא מעבירים שירות אחסון, נוצר `StorageService` כברירת מחדל.
+- `SeedService` מוסיף משתמשי הדגמה ומבחן לדוגמה רק כאשר האחסון ריק.
+- גישה לדפי תפקיד נבדקת מול המשתמש המחובר. מורה יכול לנהל רק מבחן שה-`teacherId` שלו שווה למזהה המורה.
+- מחיקת מבחן כוללת גם מחיקת התוצאות המקושרות אליו.
