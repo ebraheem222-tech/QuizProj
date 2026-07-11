@@ -48,6 +48,20 @@ function getRoleLinks(user) {
   `;
 }
 
+function trackHeaderHeight(header) {
+  const updateHeaderHeight = () => {
+    document.documentElement.style.setProperty("--app-header-height", `${header.offsetHeight}px`);
+  };
+
+  updateHeaderHeight();
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(updateHeaderHeight).observe(header);
+  } else {
+    window.addEventListener("resize", updateHeaderHeight);
+  }
+}
+
 function renderHeader(activeRoute) {
   const header = document.getElementById("appHeader");
 
@@ -73,6 +87,7 @@ function renderHeader(activeRoute) {
   `;
 
   setupNavigation(header);
+  trackHeaderHeight(header);
   header.querySelector("#themeToggle")?.addEventListener("click", toggleTheme);
   header.querySelector("#logoutButton")?.addEventListener("click", logoutAndReturnHome);
 }

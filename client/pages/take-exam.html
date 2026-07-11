@@ -15,7 +15,30 @@
         <p class="section-kicker">ביצוע מבחן</p>
         <h1 id="takeExamTitle">מבחן</h1>
       </div>
-      <div id="timerBox" class="timer-box"></div>
+    </section>
+
+    <section class="exam-status-bar" aria-label="מצב המבחן">
+      <div id="timerBox" class="timer-box" role="timer" aria-live="polite">
+        <span>זמן שנותר</span>
+        <strong id="timerValue">--:--</strong>
+      </div>
+      <div class="exam-progress-box">
+        <div class="exam-progress-text">
+          <span>התקדמות</span>
+          <strong id="answeredCount">0 מתוך 0 נענו</strong>
+        </div>
+        <div
+          id="examProgressTrack"
+          class="exam-progress-track"
+          role="progressbar"
+          aria-label="שאלות שנענו"
+          aria-valuemin="0"
+          aria-valuemax="0"
+          aria-valuenow="0"
+        >
+          <span id="examProgressBar"></span>
+        </div>
+      </div>
     </section>
 
     <div id="takeExamMessage"></div>

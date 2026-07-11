@@ -58,7 +58,13 @@ export class ResultService {
     const score = answers.filter(answer => answer.isCorrect).length;
     const totalQuestions = exam.questions.length;
     const percent = totalQuestions === 0 ? 0 : Math.round((score / totalQuestions) * 100);
-    const durationSeconds = Math.max(0, Math.round((new Date(submittedAt) - new Date(startedAt)) / 1000));
+    const elapsedSeconds = Math.max(0, Math.round((new Date(submittedAt) - new Date(startedAt)) / 1000));
+    const timeLimitSeconds = Number(exam.durationMinutes) > 0
+      ? Math.round(Number(exam.durationMinutes) * 60)
+      : null;
+    const durationSeconds = timeLimitSeconds === null
+      ? elapsedSeconds
+      : Math.min(elapsedSeconds, timeLimitSeconds);
 
     return new Result({
       examId: exam.id,
